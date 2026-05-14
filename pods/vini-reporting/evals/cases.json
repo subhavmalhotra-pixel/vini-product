@@ -1,0 +1,212 @@
+[
+  {
+    "id": "HP01",
+    "type": "happy_path",
+    "description": "Standard week with healthy call volume, multiple appointments set, and positive funnel progression for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-04-20"
+  },
+  {
+    "id": "HP02",
+    "type": "happy_path",
+    "description": "Strong week with elevated after-hours activity, 12 appointments set, and 3 closed deals for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-04-27"
+  },
+  {
+    "id": "HP03",
+    "type": "happy_path",
+    "description": "Best funnel week with 14 appointments set and 5 closed deals, showing strong show-to-close conversion for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-05-04"
+  },
+  {
+    "id": "HP04",
+    "type": "happy_path",
+    "description": "Outbound-heavy week with more outbound than inbound calls, yielding 10 appointments and 3 closings for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-03-16"
+  },
+  {
+    "id": "HP05",
+    "type": "happy_path",
+    "description": "High-activity week with 75 total calls, 15 appointments set, and strong lead engagement for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-03-23"
+  },
+  {
+    "id": "HP06",
+    "type": "happy_path",
+    "description": "Moderate volume week with steady performance, 8 appointments set, and 2 closed deals for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-04-06"
+  },
+  {
+    "id": "HP07",
+    "type": "happy_path",
+    "description": "Balanced week with equal inbound and outbound, 11 appointments set, and good callback volume for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-04-13"
+  },
+  {
+    "id": "HP08",
+    "type": "happy_path",
+    "description": "Lighter volume week with solid funnel efficiency, 6 appointments set and 2 closed from 30 total calls for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-03-02"
+  },
+  {
+    "id": "HP09",
+    "type": "happy_path",
+    "description": "Low-volume week with inbound-dominant traffic, 5 appointments set, and 1 closed deal for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-02-23"
+  },
+  {
+    "id": "HP10",
+    "type": "happy_path",
+    "description": "Active week with 68 total calls, 13 appointments set, 11 after-hours calls, and 3 closed deals for Sunrise Auto Group.",
+    "dealer_id": "D001",
+    "week_start_date": "2026-02-16"
+  },
+  {
+    "id": "EC01",
+    "type": "edge_case",
+    "description": "Zero-call week with no activity across all metrics, testing graceful handling of empty data for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-04-27"
+  },
+  {
+    "id": "EC02",
+    "type": "edge_case",
+    "description": "Week with calls but zero appointments set, testing output when the funnel is completely empty for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-04-20"
+  },
+  {
+    "id": "EC03",
+    "type": "edge_case",
+    "description": "Week with zero after-hours calls, testing that after-hours section is correctly omitted or handled for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-04-13"
+  },
+  {
+    "id": "EC04",
+    "type": "edge_case",
+    "description": "Week starting April 28 spanning month boundary (April into May), testing date-range handling for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-04-28"
+  },
+  {
+    "id": "EC05",
+    "type": "edge_case",
+    "description": "Thin-data week with only 2 total calls, testing behavior with minimal call volume for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-04-06"
+  },
+  {
+    "id": "EC06",
+    "type": "edge_case",
+    "description": "Week where every call outcome was no-answer with zero appointments, testing all-no-answer scenario for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-03-30"
+  },
+  {
+    "id": "EC07",
+    "type": "edge_case",
+    "description": "Week where all 15 calls occurred after hours with zero outbound, testing all-after-hours scenario for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-03-23"
+  },
+  {
+    "id": "EC08",
+    "type": "edge_case",
+    "description": "Week with 12 appointments set but zero closed deals, testing zero-close funnel output for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-03-16"
+  },
+  {
+    "id": "EC09",
+    "type": "edge_case",
+    "description": "Week with a 100% appointment show rate (5 of 5 showed), testing perfect show-rate reporting for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-03-09"
+  },
+  {
+    "id": "EC10",
+    "type": "edge_case",
+    "description": "Single-call week where the one call resulted in a set, show, demo, and close, testing minimal data for Valley Motors.",
+    "dealer_id": "D002",
+    "week_start_date": "2026-03-02"
+  },
+  {
+    "id": "FM01",
+    "type": "failure_model",
+    "description": "Near-zero conversion week with 90 calls but only 3 appointments and 0 closings, testing failure-mode language for Peak Auto Center.",
+    "dealer_id": "D003",
+    "week_start_date": "2026-04-27"
+  },
+  {
+    "id": "FM02",
+    "type": "failure_model",
+    "description": "DST boundary week starting March 9 (day after clocks spring forward), testing timezone edge case for Peak Auto Center.",
+    "dealer_id": "D003",
+    "week_start_date": "2026-03-09"
+  },
+  {
+    "id": "FM03",
+    "type": "failure_model",
+    "description": "Zero-inbound all-outbound week with no after-hours calls, testing directional imbalance for Peak Auto Center.",
+    "dealer_id": "D003",
+    "week_start_date": "2026-04-13"
+  },
+  {
+    "id": "FM04",
+    "type": "failure_model",
+    "description": "High-volume week with 130 calls and large numbers, testing rounding and number accuracy for Peak Auto Center.",
+    "dealer_id": "D003",
+    "week_start_date": "2026-04-06"
+  },
+  {
+    "id": "FM05",
+    "type": "failure_model",
+    "description": "Week where after-hours call count (35) exceeds inbound call count (30), testing anomalous data for Peak Auto Center.",
+    "dealer_id": "D003",
+    "week_start_date": "2026-03-30"
+  },
+  {
+    "id": "ST01",
+    "type": "stress",
+    "description": "Very high volume week with 150 total calls, 35 appointments, and 8 closed deals, testing stress capacity for Metro Cars.",
+    "dealer_id": "D004",
+    "week_start_date": "2026-04-27"
+  },
+  {
+    "id": "ST02",
+    "type": "stress",
+    "description": "Week with 50 hot leads and 120 outreach attempts, testing handling of large lead volumes for Metro Cars.",
+    "dealer_id": "D004",
+    "week_start_date": "2026-04-20"
+  },
+  {
+    "id": "ST03",
+    "type": "stress",
+    "description": "Year-boundary week starting December 28 spanning into January 2027, testing cross-year date handling for Metro Cars.",
+    "dealer_id": "D004",
+    "week_start_date": "2026-12-28"
+  },
+  {
+    "id": "ST04",
+    "type": "stress",
+    "description": "Week with 25 hot leads and detailed lead tracking across 108 total calls, testing max lead detail rendering for Metro Cars.",
+    "dealer_id": "D004",
+    "week_start_date": "2026-04-06"
+  },
+  {
+    "id": "ST05",
+    "type": "stress",
+    "description": "High-volume week with 45 after-hours calls exceeding inbound count and 28 appointments set for Metro Cars.",
+    "dealer_id": "D004",
+    "week_start_date": "2026-03-30"
+  }
+]

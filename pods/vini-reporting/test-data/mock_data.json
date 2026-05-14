@@ -1,0 +1,1663 @@
+{
+  "D001:2026-04-20": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 38,
+      "total_outbound": 22,
+      "after_hours_count": 10,
+      "outcomes": {
+        "appointment_set": 9,
+        "no_answer": 18,
+        "callback_requested": 6,
+        "other": 27
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 9,
+      "appointments_showed": 6,
+      "appointments_demoed": 4,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 8,
+      "total_outreach_attempts": 19,
+      "sample_leads": [
+        {"name": "Marcus T.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Sandra L.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Sarah K.",
+          "direction": "inbound",
+          "duration_sec": 185,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer asked about 2023 Toyota Camry availability; appointment confirmed for Thursday 2pm."
+        },
+        {
+          "caller": "Mike D.",
+          "direction": "outbound",
+          "duration_sec": 142,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Follow-up on SUV trade-in; customer unavailable, voicemail left."
+        },
+        {
+          "caller": "Lisa M.",
+          "direction": "inbound",
+          "duration_sec": 67,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Customer disconnected before agent connection."
+        }
+      ]
+    }
+  },
+  "D001:2026-04-27": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 42,
+      "total_outbound": 18,
+      "after_hours_count": 18,
+      "outcomes": {
+        "appointment_set": 12,
+        "no_answer": 22,
+        "callback_requested": 8,
+        "other": 18
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 12,
+      "appointments_showed": 8,
+      "appointments_demoed": 5,
+      "appointments_closed": 3
+    },
+    "lead_activity": {
+      "hot_leads_touched": 10,
+      "total_outreach_attempts": 24,
+      "sample_leads": [
+        {"name": "James R.", "attempts": 4, "last_action": "appointment_set"},
+        {"name": "Patricia N.", "attempts": 3, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Tom B.",
+          "direction": "inbound",
+          "duration_sec": 210,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer inquired about financing options for a used sedan; appointment set for Saturday morning."
+        },
+        {
+          "caller": "Karen W.",
+          "direction": "outbound",
+          "duration_sec": 165,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Outreach to warm lead about truck inventory; customer requested a callback after 5pm."
+        },
+        {
+          "caller": "David S.",
+          "direction": "inbound",
+          "duration_sec": 88,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Call dropped before reaching a representative."
+        }
+      ]
+    }
+  },
+  "D001:2026-05-04": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 35,
+      "total_outbound": 25,
+      "after_hours_count": 8,
+      "outcomes": {
+        "appointment_set": 14,
+        "no_answer": 20,
+        "callback_requested": 6,
+        "other": 20
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 14,
+      "appointments_showed": 11,
+      "appointments_demoed": 8,
+      "appointments_closed": 5
+    },
+    "lead_activity": {
+      "hot_leads_touched": 12,
+      "total_outreach_attempts": 28,
+      "sample_leads": [
+        {"name": "Brenda H.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Carlos M.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Julia F.", "attempts": 4, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Angela P.",
+          "direction": "inbound",
+          "duration_sec": 220,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer interested in leasing a compact SUV; confirmed test drive for Monday at 11am."
+        },
+        {
+          "caller": "Robert J.",
+          "direction": "outbound",
+          "duration_sec": 178,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "Reconnected with a previous visitor about the Civic they test-drove; appointment confirmed."
+        },
+        {
+          "caller": "Stephanie C.",
+          "direction": "inbound",
+          "duration_sec": 55,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller hung up during hold."
+        }
+      ]
+    }
+  },
+  "D001:2026-03-16": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 20,
+      "total_outbound": 45,
+      "after_hours_count": 6,
+      "outcomes": {
+        "appointment_set": 10,
+        "no_answer": 35,
+        "callback_requested": 8,
+        "other": 12
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 10,
+      "appointments_showed": 7,
+      "appointments_demoed": 5,
+      "appointments_closed": 3
+    },
+    "lead_activity": {
+      "hot_leads_touched": 7,
+      "total_outreach_attempts": 16,
+      "sample_leads": [
+        {"name": "William K.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Rachel A.", "attempts": 2, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Nancy G.",
+          "direction": "outbound",
+          "duration_sec": 195,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Follow-up with a customer who expressed interest online; appointment confirmed for Wednesday."
+        },
+        {
+          "caller": "Eric V.",
+          "direction": "outbound",
+          "duration_sec": 140,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Outreach about a minivan trade-in opportunity; customer asked for a callback next morning."
+        },
+        {
+          "caller": "Helen Q.",
+          "direction": "inbound",
+          "duration_sec": 72,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller disconnected while waiting in queue."
+        }
+      ]
+    }
+  },
+  "D001:2026-03-23": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 45,
+      "total_outbound": 30,
+      "after_hours_count": 12,
+      "outcomes": {
+        "appointment_set": 15,
+        "no_answer": 30,
+        "callback_requested": 12,
+        "other": 18
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 15,
+      "appointments_showed": 10,
+      "appointments_demoed": 8,
+      "appointments_closed": 4
+    },
+    "lead_activity": {
+      "hot_leads_touched": 15,
+      "total_outreach_attempts": 35,
+      "sample_leads": [
+        {"name": "Daniel O.", "attempts": 5, "last_action": "appointment_set"},
+        {"name": "Monica U.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Steven I.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Linda Z.",
+          "direction": "inbound",
+          "duration_sec": 235,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer called after seeing a weekend promotion; booked a Saturday test drive."
+        },
+        {
+          "caller": "Frank E.",
+          "direction": "outbound",
+          "duration_sec": 182,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "Cold outreach to a high-intent web lead resulted in an appointment for Friday afternoon."
+        },
+        {
+          "caller": "Betty X.",
+          "direction": "inbound",
+          "duration_sec": 61,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Customer abandoned the call before speaking with anyone."
+        }
+      ]
+    }
+  },
+  "D001:2026-04-06": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 33,
+      "total_outbound": 19,
+      "after_hours_count": 9,
+      "outcomes": {
+        "appointment_set": 8,
+        "no_answer": 24,
+        "callback_requested": 5,
+        "other": 15
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 8,
+      "appointments_showed": 5,
+      "appointments_demoed": 3,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 6,
+      "total_outreach_attempts": 14,
+      "sample_leads": [
+        {"name": "George Y.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Diane C.", "attempts": 3, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Charles B.",
+          "direction": "inbound",
+          "duration_sec": 198,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer called after hours about available pickup trucks; appointment scheduled for Tuesday."
+        },
+        {
+          "caller": "Dorothy R.",
+          "direction": "outbound",
+          "duration_sec": 155,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Attempted to re-engage a lapsed lead; customer asked for a later callback."
+        },
+        {
+          "caller": "Harold F.",
+          "direction": "inbound",
+          "duration_sec": 79,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller did not stay on the line long enough to connect."
+        }
+      ]
+    }
+  },
+  "D001:2026-04-13": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 28,
+      "total_outbound": 32,
+      "after_hours_count": 7,
+      "outcomes": {
+        "appointment_set": 11,
+        "no_answer": 26,
+        "callback_requested": 13,
+        "other": 10
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 11,
+      "appointments_showed": 8,
+      "appointments_demoed": 6,
+      "appointments_closed": 3
+    },
+    "lead_activity": {
+      "hot_leads_touched": 9,
+      "total_outreach_attempts": 21,
+      "sample_leads": [
+        {"name": "Alice T.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Mark H.", "attempts": 4, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Walter S.",
+          "direction": "outbound",
+          "duration_sec": 207,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Evening outreach to a high-priority lead landed a Saturday morning appointment."
+        },
+        {
+          "caller": "Ruth M.",
+          "direction": "inbound",
+          "duration_sec": 168,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Customer asked about extended warranties; needed time to review and requested a callback."
+        },
+        {
+          "caller": "Kenneth L.",
+          "direction": "outbound",
+          "duration_sec": 93,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Voicemail left for a prospect who had visited the lot previously."
+        }
+      ]
+    }
+  },
+  "D001:2026-03-02": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 18,
+      "total_outbound": 12,
+      "after_hours_count": 4,
+      "outcomes": {
+        "appointment_set": 6,
+        "no_answer": 12,
+        "callback_requested": 4,
+        "other": 8
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 6,
+      "appointments_showed": 5,
+      "appointments_demoed": 4,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 5,
+      "total_outreach_attempts": 11,
+      "sample_leads": [
+        {"name": "Betty J.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Larry W.", "attempts": 2, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Sharon P.",
+          "direction": "inbound",
+          "duration_sec": 188,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "After-hours inquiry about a certified pre-owned RAV4; test drive booked for Friday."
+        },
+        {
+          "caller": "Gary N.",
+          "direction": "outbound",
+          "duration_sec": 134,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Attempted to schedule a follow-up with a service customer; callback requested for Thursday."
+        },
+        {
+          "caller": "Donna Q.",
+          "direction": "inbound",
+          "duration_sec": 58,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped before the connection was established."
+        }
+      ]
+    }
+  },
+  "D001:2026-02-23": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 22,
+      "total_outbound": 8,
+      "after_hours_count": 5,
+      "outcomes": {
+        "appointment_set": 5,
+        "no_answer": 14,
+        "callback_requested": 3,
+        "other": 8
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 5,
+      "appointments_showed": 3,
+      "appointments_demoed": 2,
+      "appointments_closed": 1
+    },
+    "lead_activity": {
+      "hot_leads_touched": 4,
+      "total_outreach_attempts": 9,
+      "sample_leads": [
+        {"name": "Roger A.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Carolyn D.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Joyce E.",
+          "direction": "inbound",
+          "duration_sec": 172,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer inquired about monthly payment options on a crossover; appointment set for Monday."
+        },
+        {
+          "caller": "Raymond K.",
+          "direction": "outbound",
+          "duration_sec": 120,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Outreach to a returning customer about a newer model upgrade; callback confirmed for tomorrow."
+        },
+        {
+          "caller": "Virginia I.",
+          "direction": "inbound",
+          "duration_sec": 44,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Call abandoned during routing."
+        }
+      ]
+    }
+  },
+  "D001:2026-02-16": {
+    "dealer_name": "Sunrise Auto Group",
+    "timezone": "America/Chicago",
+    "call_stats": {
+      "total_inbound": 40,
+      "total_outbound": 28,
+      "after_hours_count": 11,
+      "outcomes": {
+        "appointment_set": 13,
+        "no_answer": 28,
+        "callback_requested": 10,
+        "other": 17
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 13,
+      "appointments_showed": 9,
+      "appointments_demoed": 6,
+      "appointments_closed": 3
+    },
+    "lead_activity": {
+      "hot_leads_touched": 11,
+      "total_outreach_attempts": 25,
+      "sample_leads": [
+        {"name": "Harold B.", "attempts": 4, "last_action": "appointment_set"},
+        {"name": "Frances U.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Phillip O.", "attempts": 2, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Teresa Z.",
+          "direction": "inbound",
+          "duration_sec": 215,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer called late about a Presidents Day sale vehicle; appointment confirmed for Wednesday."
+        },
+        {
+          "caller": "Arthur V.",
+          "direction": "outbound",
+          "duration_sec": 183,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "Successful outreach to a high-intent lead who had submitted an online inquiry."
+        },
+        {
+          "caller": "Mildred X.",
+          "direction": "inbound",
+          "duration_sec": 71,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "No one picked up on the customer's end after transfer."
+        }
+      ]
+    }
+  },
+  "D002:2026-04-27": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 0,
+      "total_outbound": 0,
+      "after_hours_count": 0,
+      "outcomes": {
+        "appointment_set": 0,
+        "no_answer": 0,
+        "callback_requested": 0,
+        "other": 0
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 0,
+      "appointments_showed": 0,
+      "appointments_demoed": 0,
+      "appointments_closed": 0
+    },
+    "lead_activity": {
+      "hot_leads_touched": 0,
+      "total_outreach_attempts": 0,
+      "sample_leads": []
+    },
+    "top_calls": {
+      "calls": []
+    }
+  },
+  "D002:2026-04-20": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 25,
+      "total_outbound": 10,
+      "after_hours_count": 6,
+      "outcomes": {
+        "appointment_set": 0,
+        "no_answer": 25,
+        "callback_requested": 6,
+        "other": 4
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 0,
+      "appointments_showed": 0,
+      "appointments_demoed": 0,
+      "appointments_closed": 0
+    },
+    "lead_activity": {
+      "hot_leads_touched": 3,
+      "total_outreach_attempts": 8,
+      "sample_leads": [
+        {"name": "Nina C.", "attempts": 3, "last_action": "no_answer"},
+        {"name": "Oscar G.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Pamela R.",
+          "direction": "inbound",
+          "duration_sec": 95,
+          "time_of_day": "after_hours",
+          "outcome": "no_answer",
+          "snippet": "Customer called after hours but was not reachable during callback attempts."
+        },
+        {
+          "caller": "Quinn B.",
+          "direction": "outbound",
+          "duration_sec": 110,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Outreach to a web lead; customer requested follow-up later in the week."
+        },
+        {
+          "caller": "Rosa T.",
+          "direction": "inbound",
+          "duration_sec": 48,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped before reaching an agent."
+        }
+      ]
+    }
+  },
+  "D002:2026-04-13": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 30,
+      "total_outbound": 15,
+      "after_hours_count": 0,
+      "outcomes": {
+        "appointment_set": 8,
+        "no_answer": 22,
+        "callback_requested": 5,
+        "other": 10
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 8,
+      "appointments_showed": 5,
+      "appointments_demoed": 3,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 6,
+      "total_outreach_attempts": 14,
+      "sample_leads": [
+        {"name": "Samuel Y.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Tina Z.", "attempts": 3, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Umar K.",
+          "direction": "inbound",
+          "duration_sec": 201,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer called about a certified used Honda Accord; test drive booked for Wednesday."
+        },
+        {
+          "caller": "Vera L.",
+          "direction": "outbound",
+          "duration_sec": 157,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Follow-up on a financing inquiry; customer requested a morning callback."
+        },
+        {
+          "caller": "Wesley N.",
+          "direction": "inbound",
+          "duration_sec": 63,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller hung up while on hold."
+        }
+      ]
+    }
+  },
+  "D002:2026-04-28": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 32,
+      "total_outbound": 18,
+      "after_hours_count": 9,
+      "outcomes": {
+        "appointment_set": 10,
+        "no_answer": 20,
+        "callback_requested": 8,
+        "other": 12
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 10,
+      "appointments_showed": 7,
+      "appointments_demoed": 4,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 8,
+      "total_outreach_attempts": 18,
+      "sample_leads": [
+        {"name": "Xena F.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Yoshi P.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Zara M.",
+          "direction": "inbound",
+          "duration_sec": 193,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "End-of-month call about an SUV promotion; appointment confirmed for May 1st."
+        },
+        {
+          "caller": "Aaron H.",
+          "direction": "outbound",
+          "duration_sec": 148,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Month-boundary outreach to a prospect; callback requested for early next week."
+        },
+        {
+          "caller": "Beth C.",
+          "direction": "inbound",
+          "duration_sec": 74,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped during routing at end of business day."
+        }
+      ]
+    }
+  },
+  "D002:2026-04-06": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 2,
+      "total_outbound": 0,
+      "after_hours_count": 1,
+      "outcomes": {
+        "appointment_set": 1,
+        "no_answer": 1,
+        "callback_requested": 0,
+        "other": 0
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 1,
+      "appointments_showed": 1,
+      "appointments_demoed": 0,
+      "appointments_closed": 0
+    },
+    "lead_activity": {
+      "hot_leads_touched": 1,
+      "total_outreach_attempts": 2,
+      "sample_leads": [
+        {"name": "Craig V.", "attempts": 2, "last_action": "appointment_set"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Dana S.",
+          "direction": "inbound",
+          "duration_sec": 175,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Only after-hours call of the week; customer booked a Friday appointment."
+        },
+        {
+          "caller": "Evan R.",
+          "direction": "inbound",
+          "duration_sec": 52,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Second call of the week; caller disconnected before being answered."
+        }
+      ]
+    }
+  },
+  "D002:2026-03-30": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 20,
+      "total_outbound": 15,
+      "after_hours_count": 5,
+      "outcomes": {
+        "appointment_set": 0,
+        "no_answer": 35,
+        "callback_requested": 0,
+        "other": 0
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 0,
+      "appointments_showed": 0,
+      "appointments_demoed": 0,
+      "appointments_closed": 0
+    },
+    "lead_activity": {
+      "hot_leads_touched": 0,
+      "total_outreach_attempts": 0,
+      "sample_leads": []
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Fiona T.",
+          "direction": "inbound",
+          "duration_sec": 32,
+          "time_of_day": "after_hours",
+          "outcome": "no_answer",
+          "snippet": "After-hours caller reached voicemail with no message left."
+        },
+        {
+          "caller": "Greg U.",
+          "direction": "outbound",
+          "duration_sec": 45,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Outreach attempt went to voicemail; no response received."
+        },
+        {
+          "caller": "Holly I.",
+          "direction": "inbound",
+          "duration_sec": 28,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Call dropped before reaching the queue."
+        }
+      ]
+    }
+  },
+  "D002:2026-03-23": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 15,
+      "total_outbound": 0,
+      "after_hours_count": 15,
+      "outcomes": {
+        "appointment_set": 5,
+        "no_answer": 8,
+        "callback_requested": 2,
+        "other": 0
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 5,
+      "appointments_showed": 3,
+      "appointments_demoed": 1,
+      "appointments_closed": 1
+    },
+    "lead_activity": {
+      "hot_leads_touched": 3,
+      "total_outreach_attempts": 7,
+      "sample_leads": [
+        {"name": "Ivan B.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Jade O.", "attempts": 3, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Kevin A.",
+          "direction": "inbound",
+          "duration_sec": 204,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "All 15 calls this week were after-hours; customer booked a Sunday afternoon visit."
+        },
+        {
+          "caller": "Laura D.",
+          "direction": "inbound",
+          "duration_sec": 136,
+          "time_of_day": "after_hours",
+          "outcome": "callback_requested",
+          "snippet": "After-hours caller asked about trade-in value; requested a daytime callback."
+        },
+        {
+          "caller": "Martin E.",
+          "direction": "inbound",
+          "duration_sec": 41,
+          "time_of_day": "after_hours",
+          "outcome": "no_answer",
+          "snippet": "After-hours call disconnected before being routed."
+        }
+      ]
+    }
+  },
+  "D002:2026-03-16": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 33,
+      "total_outbound": 20,
+      "after_hours_count": 8,
+      "outcomes": {
+        "appointment_set": 12,
+        "no_answer": 25,
+        "callback_requested": 6,
+        "other": 10
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 12,
+      "appointments_showed": 4,
+      "appointments_demoed": 2,
+      "appointments_closed": 0
+    },
+    "lead_activity": {
+      "hot_leads_touched": 7,
+      "total_outreach_attempts": 16,
+      "sample_leads": [
+        {"name": "Noel F.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Olive G.", "attempts": 2, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Peter H.",
+          "direction": "inbound",
+          "duration_sec": 197,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer set an appointment that ultimately did not convert to a closed deal this week."
+        },
+        {
+          "caller": "Quinn J.",
+          "direction": "outbound",
+          "duration_sec": 161,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Follow-up on an appointment lead; callback requested to reschedule."
+        },
+        {
+          "caller": "Rose K.",
+          "direction": "inbound",
+          "duration_sec": 68,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller disconnected before speaking with an agent."
+        }
+      ]
+    }
+  },
+  "D002:2026-03-09": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 15,
+      "total_outbound": 10,
+      "after_hours_count": 3,
+      "outcomes": {
+        "appointment_set": 5,
+        "no_answer": 12,
+        "callback_requested": 4,
+        "other": 4
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 5,
+      "appointments_showed": 5,
+      "appointments_demoed": 3,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 4,
+      "total_outreach_attempts": 9,
+      "sample_leads": [
+        {"name": "Steve L.", "attempts": 2, "last_action": "appointment_set"},
+        {"name": "Tara M.", "attempts": 3, "last_action": "appointment_set"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Uma N.",
+          "direction": "inbound",
+          "duration_sec": 222,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Customer confirmed an appointment; all 5 of 5 who set appointments showed this week."
+        },
+        {
+          "caller": "Vince O.",
+          "direction": "outbound",
+          "duration_sec": 174,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "Outbound call to a returning customer resulted in a same-week appointment that showed."
+        },
+        {
+          "caller": "Wendy P.",
+          "direction": "inbound",
+          "duration_sec": 56,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped during hold."
+        }
+      ]
+    }
+  },
+  "D002:2026-03-02": {
+    "dealer_name": "Valley Motors",
+    "timezone": "America/Los_Angeles",
+    "call_stats": {
+      "total_inbound": 1,
+      "total_outbound": 0,
+      "after_hours_count": 0,
+      "outcomes": {
+        "appointment_set": 1,
+        "no_answer": 0,
+        "callback_requested": 0,
+        "other": 0
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 1,
+      "appointments_showed": 1,
+      "appointments_demoed": 1,
+      "appointments_closed": 1
+    },
+    "lead_activity": {
+      "hot_leads_touched": 1,
+      "total_outreach_attempts": 1,
+      "sample_leads": [
+        {"name": "Xavier Q.", "attempts": 1, "last_action": "appointment_set"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Yolanda R.",
+          "direction": "inbound",
+          "duration_sec": 248,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "The sole call this week resulted in a set appointment, show, demo, and close."
+        }
+      ]
+    }
+  },
+  "D003:2026-04-27": {
+    "dealer_name": "Peak Auto Center",
+    "timezone": "America/New_York",
+    "call_stats": {
+      "total_inbound": 55,
+      "total_outbound": 35,
+      "after_hours_count": 14,
+      "outcomes": {
+        "appointment_set": 3,
+        "no_answer": 70,
+        "callback_requested": 10,
+        "other": 7
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 3,
+      "appointments_showed": 1,
+      "appointments_demoed": 0,
+      "appointments_closed": 0
+    },
+    "lead_activity": {
+      "hot_leads_touched": 5,
+      "total_outreach_attempts": 12,
+      "sample_leads": [
+        {"name": "Abby S.", "attempts": 3, "last_action": "no_answer"},
+        {"name": "Ben T.", "attempts": 4, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Clara U.",
+          "direction": "inbound",
+          "duration_sec": 145,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "One of only 3 appointments set despite 90 total calls; customer confirmed a Wednesday slot."
+        },
+        {
+          "caller": "Derek V.",
+          "direction": "outbound",
+          "duration_sec": 98,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "High no-answer week; outreach voicemail left with no response."
+        },
+        {
+          "caller": "Elaine W.",
+          "direction": "inbound",
+          "duration_sec": 55,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped before reaching an agent during a high-volume period."
+        }
+      ]
+    }
+  },
+  "D003:2026-03-09": {
+    "dealer_name": "Peak Auto Center",
+    "timezone": "America/New_York",
+    "call_stats": {
+      "total_inbound": 28,
+      "total_outbound": 16,
+      "after_hours_count": 7,
+      "outcomes": {
+        "appointment_set": 9,
+        "no_answer": 22,
+        "callback_requested": 7,
+        "other": 6
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 9,
+      "appointments_showed": 6,
+      "appointments_demoed": 4,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 7,
+      "total_outreach_attempts": 16,
+      "sample_leads": [
+        {"name": "Fred X.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Gina Y.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Hank Z.",
+          "direction": "inbound",
+          "duration_sec": 199,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "DST boundary week (clocks sprang forward Mar 8): after-hours call booked a Monday morning slot despite the time change."
+        },
+        {
+          "caller": "Iris A.",
+          "direction": "outbound",
+          "duration_sec": 162,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Follow-up during DST adjustment week; customer requested a callback for later in the week."
+        },
+        {
+          "caller": "Jack B.",
+          "direction": "inbound",
+          "duration_sec": 69,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Short call dropped; DST week brought minor scheduling confusion."
+        }
+      ]
+    }
+  },
+  "D003:2026-04-13": {
+    "dealer_name": "Peak Auto Center",
+    "timezone": "America/New_York",
+    "call_stats": {
+      "total_inbound": 0,
+      "total_outbound": 40,
+      "after_hours_count": 0,
+      "outcomes": {
+        "appointment_set": 8,
+        "no_answer": 28,
+        "callback_requested": 4,
+        "other": 0
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 8,
+      "appointments_showed": 5,
+      "appointments_demoed": 3,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 6,
+      "total_outreach_attempts": 14,
+      "sample_leads": [
+        {"name": "Karen C.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Leo D.", "attempts": 2, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Mary E.",
+          "direction": "outbound",
+          "duration_sec": 211,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "All 40 calls were outbound this week; this successful outreach set a test drive for Friday."
+        },
+        {
+          "caller": "Nick F.",
+          "direction": "outbound",
+          "duration_sec": 153,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Outbound follow-up on an online inquiry; customer requested a Thursday callback."
+        },
+        {
+          "caller": "Olivia G.",
+          "direction": "outbound",
+          "duration_sec": 77,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Outbound call went to voicemail; no return call received."
+        }
+      ]
+    }
+  },
+  "D003:2026-04-06": {
+    "dealer_name": "Peak Auto Center",
+    "timezone": "America/New_York",
+    "call_stats": {
+      "total_inbound": 87,
+      "total_outbound": 43,
+      "after_hours_count": 23,
+      "outcomes": {
+        "appointment_set": 25,
+        "no_answer": 65,
+        "callback_requested": 22,
+        "other": 18
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 25,
+      "appointments_showed": 17,
+      "appointments_demoed": 11,
+      "appointments_closed": 6
+    },
+    "lead_activity": {
+      "hot_leads_touched": 18,
+      "total_outreach_attempts": 42,
+      "sample_leads": [
+        {"name": "Paul H.", "attempts": 5, "last_action": "appointment_set"},
+        {"name": "Quinn I.", "attempts": 4, "last_action": "appointment_set"},
+        {"name": "Rachel J.", "attempts": 3, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Sam K.",
+          "direction": "inbound",
+          "duration_sec": 238,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "High-volume week with 23 after-hours calls; this customer locked in a Saturday demo."
+        },
+        {
+          "caller": "Tanya L.",
+          "direction": "outbound",
+          "duration_sec": 191,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "130 total calls this week; outbound outreach converted a warm lead into a confirmed appointment."
+        },
+        {
+          "caller": "Ulric M.",
+          "direction": "inbound",
+          "duration_sec": 84,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "One of many missed connections during the high-volume week."
+        }
+      ]
+    }
+  },
+  "D003:2026-03-30": {
+    "dealer_name": "Peak Auto Center",
+    "timezone": "America/New_York",
+    "call_stats": {
+      "total_inbound": 30,
+      "total_outbound": 20,
+      "after_hours_count": 35,
+      "outcomes": {
+        "appointment_set": 12,
+        "no_answer": 25,
+        "callback_requested": 8,
+        "other": 5
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 12,
+      "appointments_showed": 8,
+      "appointments_demoed": 5,
+      "appointments_closed": 3
+    },
+    "lead_activity": {
+      "hot_leads_touched": 9,
+      "total_outreach_attempts": 22,
+      "sample_leads": [
+        {"name": "Vera N.", "attempts": 4, "last_action": "appointment_set"},
+        {"name": "Wade O.", "attempts": 3, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Xena P.",
+          "direction": "inbound",
+          "duration_sec": 217,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "After-hours call count (35) exceeded inbound call count (30) this week; customer booked a Tuesday appointment."
+        },
+        {
+          "caller": "Yusuf Q.",
+          "direction": "outbound",
+          "duration_sec": 177,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "Outbound lead follow-up during a heavy after-hours-skewed week; callback set for Monday."
+        },
+        {
+          "caller": "Zoe R.",
+          "direction": "inbound",
+          "duration_sec": 62,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Daytime call dropped before connection."
+        }
+      ]
+    }
+  },
+  "D004:2026-04-27": {
+    "dealer_name": "Metro Cars",
+    "timezone": "America/Denver",
+    "call_stats": {
+      "total_inbound": 100,
+      "total_outbound": 50,
+      "after_hours_count": 40,
+      "outcomes": {
+        "appointment_set": 35,
+        "no_answer": 80,
+        "callback_requested": 25,
+        "other": 10
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 35,
+      "appointments_showed": 22,
+      "appointments_demoed": 15,
+      "appointments_closed": 8
+    },
+    "lead_activity": {
+      "hot_leads_touched": 30,
+      "total_outreach_attempts": 75,
+      "sample_leads": [
+        {"name": "Aaron S.", "attempts": 6, "last_action": "appointment_set"},
+        {"name": "Beth T.", "attempts": 5, "last_action": "appointment_set"},
+        {"name": "Carl U.", "attempts": 4, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Diana V.",
+          "direction": "inbound",
+          "duration_sec": 243,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Very high volume week with 150 calls; after-hours customer locked in a peak-demand appointment."
+        },
+        {
+          "caller": "Ethan W.",
+          "direction": "outbound",
+          "duration_sec": 196,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "35 appointments set this week; this outbound call contributed one of the 15 demoed."
+        },
+        {
+          "caller": "Faye X.",
+          "direction": "inbound",
+          "duration_sec": 87,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "High-volume week produced significant no-answer volume alongside strong conversions."
+        }
+      ]
+    }
+  },
+  "D004:2026-04-20": {
+    "dealer_name": "Metro Cars",
+    "timezone": "America/Denver",
+    "call_stats": {
+      "total_inbound": 60,
+      "total_outbound": 45,
+      "after_hours_count": 20,
+      "outcomes": {
+        "appointment_set": 22,
+        "no_answer": 55,
+        "callback_requested": 18,
+        "other": 10
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 22,
+      "appointments_showed": 15,
+      "appointments_demoed": 10,
+      "appointments_closed": 5
+    },
+    "lead_activity": {
+      "hot_leads_touched": 50,
+      "total_outreach_attempts": 120,
+      "sample_leads": [
+        {"name": "Gary Y.", "attempts": 8, "last_action": "appointment_set"},
+        {"name": "Hana Z.", "attempts": 7, "last_action": "appointment_set"},
+        {"name": "Ian A.", "attempts": 5, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Julia B.",
+          "direction": "inbound",
+          "duration_sec": 228,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "50 hot leads touched this week; after-hours call confirmed a high-priority lead appointment."
+        },
+        {
+          "caller": "Kyle C.",
+          "direction": "outbound",
+          "duration_sec": 183,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "120 outreach attempts this week; this call converted a hot lead to a confirmed demo."
+        },
+        {
+          "caller": "Laura D.",
+          "direction": "inbound",
+          "duration_sec": 76,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped before agent connection amid the high-outreach week."
+        }
+      ]
+    }
+  },
+  "D004:2026-12-28": {
+    "dealer_name": "Metro Cars",
+    "timezone": "America/Denver",
+    "call_stats": {
+      "total_inbound": 45,
+      "total_outbound": 20,
+      "after_hours_count": 15,
+      "outcomes": {
+        "appointment_set": 10,
+        "no_answer": 35,
+        "callback_requested": 12,
+        "other": 8
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 10,
+      "appointments_showed": 6,
+      "appointments_demoed": 4,
+      "appointments_closed": 2
+    },
+    "lead_activity": {
+      "hot_leads_touched": 8,
+      "total_outreach_attempts": 18,
+      "sample_leads": [
+        {"name": "Mike E.", "attempts": 3, "last_action": "appointment_set"},
+        {"name": "Nora F.", "attempts": 2, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Owen G.",
+          "direction": "inbound",
+          "duration_sec": 206,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "Year-boundary week (Dec 28 – Jan 3); customer called to book a New Year's week appointment."
+        },
+        {
+          "caller": "Petra H.",
+          "direction": "outbound",
+          "duration_sec": 159,
+          "time_of_day": "business_hours",
+          "outcome": "callback_requested",
+          "snippet": "End-of-year outreach to a returning customer; callback requested for January."
+        },
+        {
+          "caller": "Quincy I.",
+          "direction": "inbound",
+          "duration_sec": 66,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Holiday week call dropped before connection."
+        }
+      ]
+    }
+  },
+  "D004:2026-04-06": {
+    "dealer_name": "Metro Cars",
+    "timezone": "America/Denver",
+    "call_stats": {
+      "total_inbound": 70,
+      "total_outbound": 38,
+      "after_hours_count": 18,
+      "outcomes": {
+        "appointment_set": 20,
+        "no_answer": 55,
+        "callback_requested": 15,
+        "other": 18
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 20,
+      "appointments_showed": 13,
+      "appointments_demoed": 8,
+      "appointments_closed": 4
+    },
+    "lead_activity": {
+      "hot_leads_touched": 25,
+      "total_outreach_attempts": 60,
+      "sample_leads": [
+        {"name": "Rosa J.", "attempts": 5, "last_action": "appointment_set"},
+        {"name": "Scott K.", "attempts": 4, "last_action": "appointment_set"},
+        {"name": "Tina L.", "attempts": 3, "last_action": "no_answer"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Uma M.",
+          "direction": "inbound",
+          "duration_sec": 231,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "25 hot leads tracked this week; after-hours caller set a Saturday morning appointment."
+        },
+        {
+          "caller": "Victor N.",
+          "direction": "outbound",
+          "duration_sec": 188,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "60 outreach attempts made; this call converted a high-priority lead to a confirmed demo."
+        },
+        {
+          "caller": "Wendy O.",
+          "direction": "inbound",
+          "duration_sec": 80,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped during routing on a busy call day."
+        }
+      ]
+    }
+  },
+  "D004:2026-03-30": {
+    "dealer_name": "Metro Cars",
+    "timezone": "America/Denver",
+    "call_stats": {
+      "total_inbound": 85,
+      "total_outbound": 35,
+      "after_hours_count": 45,
+      "outcomes": {
+        "appointment_set": 28,
+        "no_answer": 60,
+        "callback_requested": 20,
+        "other": 12
+      }
+    },
+    "appointment_funnel": {
+      "appointments_set": 28,
+      "appointments_showed": 18,
+      "appointments_demoed": 12,
+      "appointments_closed": 6
+    },
+    "lead_activity": {
+      "hot_leads_touched": 20,
+      "total_outreach_attempts": 50,
+      "sample_leads": [
+        {"name": "Xander P.", "attempts": 6, "last_action": "appointment_set"},
+        {"name": "Yara Q.", "attempts": 4, "last_action": "appointment_set"},
+        {"name": "Zach R.", "attempts": 3, "last_action": "callback_left"}
+      ]
+    },
+    "top_calls": {
+      "calls": [
+        {
+          "caller": "Ava S.",
+          "direction": "inbound",
+          "duration_sec": 246,
+          "time_of_day": "after_hours",
+          "outcome": "appointment_set",
+          "snippet": "45 after-hours calls this week; customer locked in a high-priority weekend appointment."
+        },
+        {
+          "caller": "Ben T.",
+          "direction": "outbound",
+          "duration_sec": 194,
+          "time_of_day": "business_hours",
+          "outcome": "appointment_set",
+          "snippet": "High-volume active week; outbound call secured a confirmed test drive for Saturday."
+        },
+        {
+          "caller": "Cara U.",
+          "direction": "inbound",
+          "duration_sec": 83,
+          "time_of_day": "business_hours",
+          "outcome": "no_answer",
+          "snippet": "Caller dropped before connection during the busy week."
+        }
+      ]
+    }
+  }
+}
