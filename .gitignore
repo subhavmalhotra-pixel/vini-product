@@ -1,3 +1,20 @@
 node_modules/
 .env
 dist/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# TypeScript / Vite build artifacts
+*.tsbuildinfo
+.vite/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Netlify CLI link state
+.netlify/
