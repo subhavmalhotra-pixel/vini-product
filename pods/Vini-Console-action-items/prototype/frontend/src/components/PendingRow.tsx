@@ -1,0 +1,198 @@
+import { useState } from "react";
+import type { ActionItem } from "@test-data";
+import { useNavigate } from "react-router-dom";
+import { getCustomerDetails, getPendingForCustomer } from "../data/store";
+import { IntentChip, IntentDot } from "./IntentChip";
+import { AssigneeBadge } from "./AssigneeBadge";
+import { AgeBadge, SLAPill } from "./AgeBadge";
+import { ChannelIcon } from "./ChannelIcon";
+import { RepeatCallerChip } from "./RepeatCallerChip";
+import { EmailLoopBadge } from "./EmailLoopBadge";
+import { ConversationSnippet } from "./ConversationSnippet";
+import { Button } from "./Button";
+import { ChevronRightIcon, BoltIcon } from "./Icon";
+
+type Props = {
+  item: ActionItem;
+  onAssign: (item: ActionItem) => void;
+  onClose: (item: ActionItem) => void;
+  onListen: (item: ActionItem) => void;
+  onBulkClose?: (items: ActionItem[]) => void;
+};
+
+/**
+ * Dense pending-row design.
+ *
+ * Default state: single line — intent dot · customer · intent chip · age · assignee · escalation
+ *                · chevron. ~36-40px row height.
+ * Expanded state: in-row accordion reveals recap · channel · repeat-caller · email-loop · actions.
+ *
+ * Click anywhere on the collapsed row toggles expand.
+ * Customer-name link bypasses expand and routes to the full profile.
+ */
+export function PendingRow({
+  item,
+  onAssign,
+  onClose,
+  onListen,
+  onBulkClose,
+}: Props) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const customer = getCustomerDetails(item.customer_id);
+  const customerPending = getPendingForCustomer(item.customer_id);
+  const otherCount = customerPending.length - 1;
+  const hasMultiIntent = otherCount > 0;
+
+  const toggle = () => setOpen((o) => !o);
+
+  return (
+    <div
+      className={`border-b border-border-subtle bg-white ${
+        open ? "bg-surface-subtle" : "hover:bg-surface-subtle"
+      } transition-colors`}
+    >
+      {/* Collapsed row — click toggles expand */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle();
+          }
+        }}
+        className="grid cursor-pointer grid-cols-[14px_minmax(0,180px)_minmax(0,1fr)_70px_120px_minmax(70px,auto)_18px] items-center gap-3 px-4 py-2"
+      >
+        {/* Intent dept dot */}
+        <IntentDot intentId={item.intent_id} />
+
+        {/* Customer name */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/customers/${item.customer_id}`);
+          }}
+          className="truncate-1 text-left text-[13px] font-semibold text-text-primary hover:text-brand-purple"
+        >
+          {customer?.display_name ?? "Unknown"}
+        </button>
+
+        {/* Intent + escalation badge + multi-intent hint */}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <IntentChip intentId={item.intent_id} />
+          {item.escalation_reason ? (
+            <span
+              className="inline-flex items-center gap-0.5 rounded-full bg-status-past-soft px-1.5 py-0.5 text-[10px] font-semibold text-status-past"
+              title={`Escalated: ${item.escalation_reason}`}
+            >
+              <BoltIcon size={10} /> Escalated
+            </span>
+          ) : null}
+          {hasMultiIntent ? (
+            <span
+              className="inline-flex items-center rounded-full bg-brand-purple-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-purple"
+              title={`This customer has ${customerPending.length} pending intents`}
+            >
+              +{otherCount} more
+            </span>
+          ) : null}
+        </div>
+
+        {/* Age */}
+        <AgeBadge item={item} />
+
+        {/* Assignee */}
+        <AssigneeBadge userId={item.assignee_user_id} variant="full" />
+
+        {/* Right-side meta — channel icon + sla pill */}
+        <div className="flex items-center justify-end gap-1.5">
+          <ChannelIcon channel={item.source_channel} />
+          <SLAPill item={item} />
+        </div>
+
+        {/* Chevron */}
+        <span
+          className={`flex h-4 w-4 items-center justify-center text-text-tertiary transition-transform ${
+            open ? "rotate-90" : ""
+          }`}
+          aria-hidden
+        >
+          <ChevronRightIcon size={14} />
+        </span>
+      </div>
+
+      {/* Expanded detail */}
+      {open ? (
+        <div className="border-t border-border-subtle bg-surface-subtle/60 px-4 pb-3 pt-2.5">
+          <div className="grid grid-cols-[1fr_auto] gap-4">
+            {/* Left: recap + snippet + meta */}
+            <div className="min-w-0 space-y-2.5">
+              {/* Recap */}
+              <p className="text-[13px] leading-relaxed text-text-primary">
+                {item.intent_recap}
+              </p>
+
+              {/* Conversation snippet with click-to-view-full */}
+              <ConversationSnippet item={item} onViewFull={onListen} />
+
+              {/* Meta + badges */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-tertiary">
+                <span className="font-mono text-[10px]">
+                  {item.action_item_id}
+                </span>
+                {customer?.phone ? (
+                  <>
+                    <span>·</span>
+                    <span className="tabular">{customer.phone}</span>
+                  </>
+                ) : null}
+                <RepeatCallerChip item={item} />
+                <EmailLoopBadge item={item} />
+              </div>
+            </div>
+
+            {/* Right: actions */}
+            <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAssign(item);
+                  }}
+                >
+                  {item.assignee_user_id ? "Reassign" : "Assign"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose(item);
+                  }}
+                >
+                  Mark closed
+                </Button>
+              </div>
+              {hasMultiIntent && onBulkClose ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBulkClose(customerPending);
+                  }}
+                  className="text-[11px] font-medium text-brand-purple hover:underline"
+                >
+                  Resolve {customerPending.length} together →
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

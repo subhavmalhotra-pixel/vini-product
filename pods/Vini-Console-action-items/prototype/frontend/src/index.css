@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-surface-background text-text-primary text-sm;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Tabular numerals for tabular data (counts, times, IDs) */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Subtle focus styling — preserve focus visibility for keyboard nav (a11y) */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-brand-purple ring-offset-1;
+  }
+
+  /* Respect prefers-reduced-motion globally */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .scroll-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    @apply bg-border-subtle rounded-full;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-strong;
+  }
+
+  /* Truncate to single line ellipsis */
+  .truncate-1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* Markdown rendering styles for the /docs viewer */
+.prose-doc {
+  @apply text-[14px] leading-relaxed text-text-primary;
+}
+.prose-doc h1 {
+  @apply mt-6 text-2xl font-bold text-text-primary;
+}
+.prose-doc h2 {
+  @apply mt-7 border-b border-border-subtle pb-1.5 text-xl font-bold text-text-primary;
+}
+.prose-doc h3 {
+  @apply mt-5 text-base font-semibold text-text-primary;
+}
+.prose-doc h4 {
+  @apply mt-4 text-[14px] font-semibold text-text-primary;
+}
+.prose-doc p {
+  @apply mt-3 text-text-primary;
+}
+.prose-doc ul {
+  @apply mt-2 list-disc space-y-1 pl-6;
+}
+.prose-doc ol {
+  @apply mt-2 list-decimal space-y-1 pl-6;
+}
+.prose-doc li {
+  @apply text-text-primary;
+}
+.prose-doc li > p {
+  @apply mt-0;
+}
+.prose-doc strong {
+  @apply font-semibold text-text-primary;
+}
+.prose-doc em {
+  @apply italic;
+}
+.prose-doc a {
+  @apply text-brand-purple underline-offset-2 hover:underline;
+}
+.prose-doc code {
+  @apply rounded bg-surface-subtle px-1 py-0.5 font-mono text-[12px] text-brand-purple;
+}
+.prose-doc pre {
+  @apply mt-3 overflow-x-auto rounded-md border border-border-subtle bg-surface-subtle px-3 py-2 font-mono text-[12px] leading-relaxed;
+}
+.prose-doc pre code {
+  @apply bg-transparent p-0 text-text-primary;
+}
+.prose-doc blockquote {
+  @apply mt-3 rounded-md border-l-2 border-brand-purple bg-brand-purple-soft/40 px-3 py-2 text-text-secondary;
+}
+.prose-doc blockquote > * {
+  @apply mt-0;
+}
+.prose-doc hr {
+  @apply my-6 border-border-subtle;
+}
+.prose-doc table {
+  @apply mt-3 w-full border-collapse text-[12px];
+}
+.prose-doc th {
+  @apply border-b border-border-strong bg-surface-subtle px-2.5 py-1.5 text-left font-semibold text-text-primary;
+}
+.prose-doc td {
+  @apply border-b border-border-subtle px-2.5 py-1.5 align-top text-text-primary;
+}
+.prose-doc img {
+  @apply mt-3 max-w-full rounded-md;
+}

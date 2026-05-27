@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  base = "pods/vini-reporting/prototype/prototype-roi-email/frontend-platform"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback — every route returns index.html so react-router can handle it
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

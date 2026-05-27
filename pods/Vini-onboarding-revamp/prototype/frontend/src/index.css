@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  background: #F8F9FC;
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #0E0F1A;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Animated rainbow underline on the primary CTA — matches the recordings. */
+.cta-next {
+  position: relative;
+  isolation: isolate;
+}
+.cta-next::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -2px;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg,#ec4899,#a855f7,#3b82f6,#22d3ee,#a855f7,#ec4899);
+  background-size: 200% 100%;
+  animation: ctaShimmer 3s linear infinite;
+  z-index: -1;
+}
+@keyframes ctaShimmer {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Soft pulse for "Saving…" toasts in screenshots */
+.toast-pulse {
+  animation: toastPulse 1.4s ease-in-out infinite;
+}
+@keyframes toastPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Hide scrollbars on persona carousel */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Side-panel slide-in for DocsPanel */
+@keyframes slideIn {
+  from { transform: translateX(40px); opacity: 0.6; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Markdown rendering for the in-app docs panel */
+.markdown-body { color: #0E0F1A; font-size: 14px; line-height: 1.6; }
+.markdown-body h1 { font-size: 24px; font-weight: 800; margin: 0 0 12px; }
+.markdown-body h2 { font-size: 18px; font-weight: 700; margin: 24px 0 10px; padding-top: 8px; border-top: 1px solid #E5E7EB; }
+.markdown-body h3 { font-size: 15px; font-weight: 700; margin: 16px 0 6px; }
+.markdown-body h4 { font-size: 13.5px; font-weight: 700; margin: 14px 0 4px; color: #374151; }
+.markdown-body p  { margin: 8px 0; }
+.markdown-body ul, .markdown-body ol { margin: 8px 0; padding-left: 22px; }
+.markdown-body li { margin: 4px 0; }
+.markdown-body code {
+  background: #F3F4F6;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.markdown-body pre {
+  background: #0E0F1A;
+  color: #E5E7EB;
+  border-radius: 8px;
+  padding: 12px;
+  overflow: auto;
+  font-size: 12px;
+}
+.markdown-body pre code { background: transparent; color: inherit; padding: 0; }
+.markdown-body a { color: #7C3AED; text-decoration: underline; }
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 12px 0;
+  width: 100%;
+  font-size: 12.5px;
+  display: block;
+  overflow-x: auto;
+}
+.markdown-body thead th { background: #F8F9FC; }
+.markdown-body th, .markdown-body td {
+  border: 1px solid #E5E7EB;
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown-body blockquote {
+  border-left: 3px solid #C4B5FD;
+  margin: 12px 0;
+  padding: 6px 12px;
+  background: #F5F3FF;
+  color: #4C1D95;
+}
+.markdown-body hr { border: 0; border-top: 1px solid #E5E7EB; margin: 18px 0; }
+.markdown-body input[type="checkbox"] { margin-right: 6px; }
+.markdown-body del { color: #9CA3AF; }

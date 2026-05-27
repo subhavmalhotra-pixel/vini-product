@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-05-18T11:55:19.586Z",
+  "docs": [
+    {
+      "id": "signal",
+      "title": "Customer Signal",
+      "path": "/docs/signal-onboarding-revamp.md"
+    },
+    {
+      "id": "prd",
+      "title": "PRD (Phase 1)",
+      "path": "/docs/prd-onboarding-revamp.md"
+    }
+  ]
+}

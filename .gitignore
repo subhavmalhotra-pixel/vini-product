@@ -18,3 +18,6 @@ __pycache__/
 
 # Netlify CLI link state
 .netlify/
+
+# Internal/local-only working folders (not committed)
+_local/

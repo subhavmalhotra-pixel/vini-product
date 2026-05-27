@@ -1,0 +1,170 @@
+{
+  "_meta": {
+    "description": "Phase-1 eval cases for Rooftop + CNAM auto-fill (PRD §4.1).",
+    "schema_version": "1",
+    "notes": [
+      "Cases run offline against fixtures in test-data/fixtures/<id>/.",
+      "Each case lists expected values + pass_criteria the grader checks.",
+      "Set 'mode': 'live' on a case to fetch over the network — defaults to offline."
+    ]
+  },
+  "cases": [
+    {
+      "id": "park_avenue_honda",
+      "label": "Full Schema.org AutoDealer + multi-page contact",
+      "tier": "happy_path",
+      "input": {
+        "base_url": "https://parkavenuehonda.com",
+        "fixture_dir": "park_avenue_honda",
+        "pages": {
+          "https://parkavenuehonda.com/": "home.html",
+          "https://parkavenuehonda.com/contact": "contact.html"
+        },
+        "robots_allowed": true
+      },
+      "expected": {
+        "rooftop_name": "Park Avenue Honda",
+        "website": "https://parkavenuehonda.com",
+        "admin_phone": "+1-201-555-0142",
+        "admin_email": "info@parkavenuehonda.com",
+        "address": {
+          "line1": "405 Park Ave",
+          "district": "Rochelle Park",
+          "state_or_province": "NJ",
+          "country": "US",
+          "zipcode": "07662"
+        },
+        "timezone_derived": "America/New_York"
+      },
+      "pass_criteria": {
+        "min_high_confidence_fields": 7,
+        "must_have_fields_present": [
+          "rooftop_name", "address.line1", "address.district",
+          "address.state_or_province", "address.zipcode"
+        ],
+        "max_hallucinated_fields": 0,
+        "extraction_path_in": ["schema_org", "hybrid"]
+      }
+    },
+    {
+      "id": "sunset_ford",
+      "label": "Schema.org via openingHours string format",
+      "tier": "happy_path",
+      "input": {
+        "base_url": "https://sunsetford.com",
+        "fixture_dir": "sunset_ford",
+        "pages": {"https://sunsetford.com/": "home.html"},
+        "robots_allowed": true
+      },
+      "expected": {
+        "rooftop_name": "Sunset Ford",
+        "website": "https://sunsetford.com",
+        "address": {
+          "line1": "5440 W Sunset Blvd",
+          "district": "Los Angeles",
+          "state_or_province": "CA",
+          "zipcode": "90027"
+        },
+        "timezone_derived": "America/Los_Angeles"
+      },
+      "pass_criteria": {
+        "min_high_confidence_fields": 5,
+        "must_have_fields_present": [
+          "rooftop_name", "address.line1", "address.state_or_province", "address.zipcode"
+        ],
+        "max_hallucinated_fields": 0,
+        "extraction_path_in": ["schema_org", "hybrid"]
+      }
+    },
+    {
+      "id": "heritage_toyota_no_schema",
+      "label": "No JSON-LD; LLM-fallback required",
+      "tier": "llm_fallback",
+      "input": {
+        "base_url": "https://heritagetoyota.com",
+        "fixture_dir": "heritage_toyota_no_schema",
+        "pages": {"https://heritagetoyota.com/": "home.html"},
+        "robots_allowed": true
+      },
+      "expected": {
+        "rooftop_name": "Heritage Toyota of Owings Mills",
+        "address": {
+          "line1": "9203 Reisterstown Road",
+          "district": "Owings Mills",
+          "state_or_province": "MD",
+          "zipcode": "21117"
+        }
+      },
+      "pass_criteria": {
+        "min_filled_fields": 4,
+        "must_have_fields_present": [
+          "rooftop_name", "address.state_or_province"
+        ],
+        "max_hallucinated_fields": 0,
+        "extraction_path_in": ["llm", "hybrid"]
+      }
+    },
+    {
+      "id": "desert_chevy_partial",
+      "label": "Partial Schema.org (no address in JSON-LD)",
+      "tier": "low_yield",
+      "input": {
+        "base_url": "https://desertchevy.com",
+        "fixture_dir": "desert_chevy_partial",
+        "pages": {"https://desertchevy.com/": "home.html"},
+        "robots_allowed": true
+      },
+      "expected": {
+        "rooftop_name": "Desert Chevy of Phoenix",
+        "website": "https://desertchevy.com",
+        "admin_phone": "+1-602-555-7700"
+      },
+      "pass_criteria": {
+        "min_high_confidence_fields": 3,
+        "must_have_fields_present": ["rooftop_name"],
+        "max_hallucinated_fields": 0,
+        "needs_input_should_contain": [
+          "address.line1", "address.state_or_province", "address.zipcode"
+        ]
+      }
+    },
+    {
+      "id": "empty_site",
+      "label": "Coming-soon page; almost nothing extractable",
+      "tier": "low_yield",
+      "input": {
+        "base_url": "https://comingsoondealer.com",
+        "fixture_dir": "empty_site",
+        "pages": {"https://comingsoondealer.com/": "home.html"},
+        "robots_allowed": true
+      },
+      "expected": {},
+      "pass_criteria": {
+        "min_filled_fields": 0,
+        "max_hallucinated_fields": 0,
+        "extraction_path_in": ["failed", "llm"],
+        "needs_input_should_contain": [
+          "rooftop_name", "address.line1", "address.zipcode"
+        ]
+      }
+    },
+    {
+      "id": "robots_blocked",
+      "label": "robots.txt disallows root for our UA",
+      "tier": "edge_case",
+      "input": {
+        "base_url": "https://lockeddealer.com",
+        "fixture_dir": null,
+        "pages": {},
+        "robots_allowed": false
+      },
+      "expected": {},
+      "pass_criteria": {
+        "extraction_path_in": ["blocked"],
+        "robots_txt_allowed": false,
+        "min_filled_fields": 0,
+        "max_hallucinated_fields": 0
+      }
+    }
+  ]
+}

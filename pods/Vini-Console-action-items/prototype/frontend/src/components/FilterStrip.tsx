@@ -1,0 +1,225 @@
+import type { Channel, Dept, IntentId } from "@test-data";
+import { INTENT_TAXONOMY } from "@test-data";
+import { ChannelGlyph, SearchIcon, CloseIcon, FilterIcon } from "./Icon";
+import { useState } from "react";
+
+export type AssignmentFilter = "all" | "mine" | "others" | "unassigned";
+export type AgeFilter = "all" | "lt4h" | "lt24h" | "gt24h" | "past_sla";
+
+export type PendingFilters = {
+  assignment: AssignmentFilter;
+  intentIds: IntentId[];
+  channels: Channel[];
+  age: AgeFilter;
+  dept: Dept | "all";
+  search: string;
+};
+
+const ASSIGNMENT_OPTIONS: { value: AssignmentFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "mine", label: "Mine" },
+  { value: "others", label: "Others" },
+  { value: "unassigned", label: "Unassigned" },
+];
+
+const AGE_OPTIONS: { value: AgeFilter; label: string }[] = [
+  { value: "all", label: "Any age" },
+  { value: "lt4h", label: "< 4h" },
+  { value: "lt24h", label: "4–24h" },
+  { value: "gt24h", label: "> 24h" },
+  { value: "past_sla", label: "Past SLA" },
+];
+
+const CHANNELS: Channel[] = ["call", "sms", "chat", "email", "hitl_warm_transfer"];
+
+export function FilterStrip({
+  filters,
+  onChange,
+}: {
+  filters: PendingFilters;
+  onChange: (next: PendingFilters) => void;
+}) {
+  const [intentsOpen, setIntentsOpen] = useState(false);
+
+  const toggleIntent = (id: IntentId) =>
+    onChange({
+      ...filters,
+      intentIds: filters.intentIds.includes(id)
+        ? filters.intentIds.filter((x) => x !== id)
+        : [...filters.intentIds, id],
+    });
+
+  const toggleChannel = (c: Channel) =>
+    onChange({
+      ...filters,
+      channels: filters.channels.includes(c)
+        ? filters.channels.filter((x) => x !== c)
+        : [...filters.channels, c],
+    });
+
+  const activeCount =
+    filters.intentIds.length +
+    filters.channels.length +
+    (filters.assignment !== "all" ? 1 : 0) +
+    (filters.age !== "all" ? 1 : 0) +
+    (filters.dept !== "all" ? 1 : 0) +
+    (filters.search.trim() ? 1 : 0);
+
+  return (
+    <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle bg-white px-4 py-2">
+      {/* Search */}
+      <div className="relative w-[240px]">
+        <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary">
+          <SearchIcon size={13} />
+        </span>
+        <input
+          type="text"
+          value={filters.search}
+          onChange={(e) => onChange({ ...filters, search: e.target.value })}
+          placeholder="Search customer, recap…"
+          className="w-full rounded-md border border-border-subtle bg-white py-1 pl-7 pr-7 text-[12px] placeholder:text-text-tertiary focus:border-brand-purple focus:outline-none"
+        />
+        {filters.search ? (
+          <button
+            onClick={() => onChange({ ...filters, search: "" })}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+            aria-label="Clear search"
+          >
+            <CloseIcon size={11} />
+          </button>
+        ) : null}
+      </div>
+
+      {/* Assignment */}
+      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle">
+        {ASSIGNMENT_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onChange({ ...filters, assignment: opt.value })}
+            className={`px-2.5 py-1 text-[11px] font-semibold ${
+              filters.assignment === opt.value
+                ? "bg-brand-purple-soft text-brand-purple"
+                : "bg-white text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Age */}
+      <select
+        value={filters.age}
+        onChange={(e) => onChange({ ...filters, age: e.target.value as AgeFilter })}
+        className="rounded-md border border-border-subtle bg-white px-2 py-1 text-[11px] font-medium text-text-secondary focus:border-brand-purple focus:outline-none"
+      >
+        {AGE_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      {/* Channel icons — compact toggle row */}
+      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle">
+        {CHANNELS.map((c) => {
+          const active = filters.channels.includes(c);
+          return (
+            <button
+              key={c}
+              onClick={() => toggleChannel(c)}
+              title={c.replace("_", " ")}
+              className={`flex h-7 w-7 items-center justify-center ${
+                active
+                  ? "bg-brand-purple-soft text-brand-purple"
+                  : "bg-white text-text-tertiary hover:bg-surface-subtle"
+              }`}
+            >
+              <ChannelGlyph channel={c} size={13} />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Intent picker */}
+      <div className="relative">
+        <button
+          onClick={() => setIntentsOpen((o) => !o)}
+          className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${
+            filters.intentIds.length > 0
+              ? "border-brand-purple bg-brand-purple-soft text-brand-purple"
+              : "border-border-subtle bg-white text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          <FilterIcon size={12} /> Intent
+          {filters.intentIds.length > 0 ? (
+            <span className="rounded bg-white px-1 text-[10px] font-bold text-brand-purple">
+              {filters.intentIds.length}
+            </span>
+          ) : null}
+        </button>
+        {intentsOpen ? (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setIntentsOpen(false)} />
+            <div className="absolute left-0 top-full z-20 mt-1 max-h-[300px] w-[220px] overflow-y-auto rounded-md border border-border-subtle bg-white p-1 shadow-lg scroll-thin">
+              {Object.values(INTENT_TAXONOMY).map((intent) => {
+                const checked = filters.intentIds.includes(intent.id);
+                return (
+                  <button
+                    key={intent.id}
+                    onClick={() => toggleIntent(intent.id)}
+                    className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-[12px] ${
+                      checked
+                        ? "bg-brand-purple-soft text-brand-purple font-semibold"
+                        : "text-text-primary hover:bg-surface-subtle"
+                    }`}
+                  >
+                    {intent.display_name}
+                    <span className="text-[10px] uppercase tracking-wide text-text-tertiary">
+                      {intent.dept}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+      </div>
+
+      {/* Dept toggle right side */}
+      <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border-subtle">
+        {(["all", "sales", "service"] as const).map((d) => (
+          <button
+            key={d}
+            onClick={() => onChange({ ...filters, dept: d })}
+            className={`px-2.5 py-1 text-[11px] font-semibold capitalize ${
+              filters.dept === d
+                ? "bg-brand-purple-soft text-brand-purple"
+                : "bg-white text-text-secondary hover:bg-surface-subtle"
+            }`}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+
+      {activeCount > 0 ? (
+        <button
+          onClick={() =>
+            onChange({
+              assignment: "all",
+              intentIds: [],
+              channels: [],
+              age: "all",
+              dept: "all",
+              search: "",
+            })
+          }
+          className="text-[11px] font-medium text-brand-purple hover:underline"
+        >
+          Clear {activeCount}
+        </button>
+      ) : null}
+    </div>
+  );
+}

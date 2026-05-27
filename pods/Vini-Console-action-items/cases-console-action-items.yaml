@@ -1,0 +1,23 @@
+# Eval cases: Vini Console — Action Items
+# Status: placeholder — generate after PRD §4 (Harness spec) lands.
+#
+# Target: ≥ 30 cases across these buckets (mirroring the ROI Emailer pod):
+#   - happy_path
+#   - customer_failure
+#   - adversarial
+#   - cost_latency
+#
+# Each case follows the shape used in pods/vini-roi-emailerv2/evals/story-of-the-week/cases.yaml:
+#
+# cases:
+#   - id: case-001
+#     bucket: happy_path
+#     name: "Short, descriptive scenario name"
+#     input:
+#       # whatever the harness consumes
+#     expected:
+#       # rubric-graded expectations
+#     notes: |
+#       Why this case exists; what failure mode it pins down.
+
+cases: []
