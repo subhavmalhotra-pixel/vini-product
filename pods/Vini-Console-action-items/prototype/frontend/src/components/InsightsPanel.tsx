@@ -1,132 +1,156 @@
-import type { ComponentType } from "react";
-import {
-  SparkleIcon,
-  AlertIcon,
-  BarChartIcon,
-  RepeatIcon,
-  RobotIcon,
-  ClockIcon,
-} from "./Icon";
+import { useState } from "react";
+import { MaterialSymbol } from "./MaterialSymbol";
 
 /**
- * "Ask your queue" — Insights AI prompt panel.
+ * Insights panel · console-revamp/components.md §10 + §11.
  *
- * Per the intelligent-console-design skill (build checklist step 5):
- *   "End with an AI insights panel. A header ('Ask your dealership' or
- *   equivalent), and 4–6 suggested-question chips, each prefixed with
- *   a domain icon. Chips are tappable — they pre-fill the input."
+ * Closes every overview page. Header strip "Insights · Ask your queue",
+ * 6 chips of pre-written natural-language questions. Each chip prefixed
+ * with the domain icon (Material Symbol). Hover only changes border.
  *
- * Phase 1 ships this as a visible affordance with chips that surface
- * the right kinds of questions an operator would ask. The actual NLQ
- * routing is Phase 2 — chips show a "Coming soon" tooltip for now.
+ * Free-text NLQ is Phase 2; chips are tappable and surface a stub
+ * response so the affordance feels real today.
  */
 
-type Suggestion = {
-  icon: ComponentType<{ size?: number }>;
-  iconTone: "danger" | "ok" | "neutral" | "primary";
-  question: string;
+type Prompt = {
+  icon: string;
+  label: string;
+  /** Stubbed response so the demo feels live; Phase 2 routes to real NLQ. */
+  response: string;
 };
 
-const SUGGESTIONS: Suggestion[] = [
+const PROMPTS: Prompt[] = [
   {
-    icon: AlertIcon,
-    iconTone: "danger",
-    question: "Which intents are breaching SLA most?",
+    icon: "shield",
+    label: "Which intents are breaching SLA most this week?",
+    response:
+      "Status update and recall response are the top breaches. 3 cars stuck past SLA — needs reassignment now.",
   },
   {
-    icon: RepeatIcon,
-    iconTone: "danger",
-    question: "Show me customers who pinged us 3+ times.",
+    icon: "autorenew",
+    label: "Show me customers who pinged us 3+ times this week.",
+    response:
+      "Gary Wise leads with 5 contacts in 3 days. 2 more customers crossed the threshold today — escalate.",
   },
   {
-    icon: BarChartIcon,
-    iconTone: "primary",
-    question: "How does my closure rate compare to last week?",
+    icon: "bar_chart",
+    label: "How does my team's closure rate compare to last week?",
+    response:
+      "Closure rate down 12% week-over-week. 4 reps are below their personal trend — coaching candidates.",
   },
   {
-    icon: ClockIcon,
-    iconTone: "neutral",
-    question: "Who's closing fastest on the team this week?",
+    icon: "schedule",
+    label: "Who is closing fastest on the team this week?",
+    response:
+      "Madison closes status_update tasks 38% faster than the team median. Pair her with the unassigned aged 24h+ pile.",
   },
   {
-    icon: RobotIcon,
-    iconTone: "primary",
-    question: "What's Vini's resolution-note pass rate?",
+    icon: "auto_awesome",
+    label: "What's Vini's resolution-note pass rate this month?",
+    response:
+      "94% on the auto-graded slice. Phase 2 routing target is 90%. Vini-as-assignee is shippable on this metric.",
   },
   {
-    icon: SparkleIcon,
-    iconTone: "ok",
-    question: "Summarise today's queue health in one paragraph.",
+    icon: "trending_up",
+    label: "Summarise today's queue health in one paragraph.",
+    response:
+      "23 open, 1 past SLA, 4 unassigned — down 18% from yesterday. Repeat-caller pressure is the largest risk. Easy 1-tap closures available: 4.",
   },
 ];
 
 export function InsightsPanel() {
+  const [asked, setAsked] = useState<Prompt | null>(null);
+
   return (
-    <section
-      className="border-t border-border-subtle bg-surface-card px-5 py-5"
-      aria-labelledby="insights-heading"
-    >
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-purple-soft text-brand-purple">
-            <SparkleIcon size={14} />
-          </span>
-          <div>
-            <h2
-              id="insights-heading"
-              className="text-section-title text-text-primary"
-            >
-              Insights
-            </h2>
-          </div>
+    <section className="mt-8 rounded-xl border border-border-subtle bg-surface-card p-6">
+      {/* Header strip · sparkle accent + label + eyebrow */}
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-purple-soft text-brand-purple">
+          <MaterialSymbol name="auto_awesome" size={20} />
+        </span>
+        <div>
+          <h3 className="text-section-h2 text-text-primary">Insights</h3>
+          <p className="text-section-desc text-text-secondary">
+            Ask your queue.
+          </p>
         </div>
-        <span className="text-eyebrow text-text-tertiary">Ask your queue</span>
       </div>
 
-      <p className="mt-1 text-[12px] text-text-secondary">
-        Tap a question to get a written summary grounded in this rooftop's queue
-        data. Free-text questions land in Phase 2.
-      </p>
-
-      <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-        {SUGGESTIONS.map((s) => (
-          <SuggestionChip key={s.question} {...s} />
+      {/* Chip grid · 2 columns desktop, 1 column mobile */}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {PROMPTS.map((p, i) => (
+          <InsightChip
+            key={i}
+            icon={p.icon}
+            label={p.label}
+            onClick={() => setAsked(p)}
+            active={asked?.label === p.label}
+          />
         ))}
       </div>
+
+      {/* Inline answer · appears below the chips when a prompt is tapped */}
+      {asked ? (
+        <div className="mt-5 rounded-lg border border-border-subtle bg-surface-subtle px-4 py-3">
+          <div className="flex items-start gap-2">
+            <MaterialSymbol
+              name="auto_awesome"
+              size={16}
+              className="mt-0.5 text-brand-purple"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-list-item-title text-text-primary">
+                {asked.label}
+              </p>
+              <p className="mt-1 text-list-item-rationale text-text-secondary">
+                {asked.response}
+              </p>
+              <p className="mt-2 text-meta text-text-tertiary">
+                Stub response. Free-text NLQ ships in Phase 2.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAsked(null)}
+              aria-label="Dismiss"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-text-tertiary hover:bg-surface-muted hover:text-text-secondary"
+            >
+              <MaterialSymbol name="close" size={14} />
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
 
-const TONE_ICON: Record<Suggestion["iconTone"], string> = {
-  danger: "bg-status-past-soft text-status-past",
-  ok: "bg-status-ok-soft text-status-ok",
-  neutral: "bg-surface-subtle text-text-secondary",
-  primary: "bg-brand-purple-soft text-brand-purple",
-};
-
-function SuggestionChip({
-  icon: Icon,
-  iconTone,
-  question,
-}: Suggestion) {
+function InsightChip({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
-      disabled
-      title="Coming in Phase 2. Insights AI is a separate scoped pod."
-      className="group flex w-full cursor-not-allowed items-center gap-2.5 rounded-lg border border-border-subtle bg-surface-card px-3 py-2.5 text-left transition-colors duration-150 hover:border-brand-purple/40 hover:bg-brand-purple-soft/30"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-[13px] transition-colors duration-150 ${
+        active
+          ? "border-brand-purple bg-brand-purple-soft text-brand-purple"
+          : "border-border-subtle bg-surface-subtle text-text-primary hover:border-border-strong hover:bg-surface-card"
+      }`}
     >
-      <span
-        className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${TONE_ICON[iconTone]}`}
-      >
-        <Icon size={14} />
-      </span>
-      <span className="flex-1 text-[13px] leading-snug text-text-primary">
-        {question}
-      </span>
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-text-tertiary group-hover:text-brand-purple">
-        soon
-      </span>
+      <MaterialSymbol
+        name={icon}
+        size={16}
+        className={active ? "text-brand-purple" : "text-text-secondary"}
+      />
+      {label}
     </button>
   );
 }

@@ -16,6 +16,7 @@ import { BulkCloseDrawer } from "../components/BulkCloseDrawer";
 import { SourceDrawer } from "../components/SourceDrawer";
 import { HelpDrawer } from "../components/HelpDrawer";
 import { InsightsPanel } from "../components/InsightsPanel";
+import { ThreatsOpportunities } from "../components/ThreatsOpportunities";
 import { ClipboardListIcon, ClockIcon, CheckIcon } from "../components/Icon";
 
 const ASSIGNMENT_FILTER_KEY = "vini.actionItems.assignmentFilter";
@@ -263,6 +264,12 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
                 />
               ))
             )}
+            {/* Threats / Opportunities split · console-revamp components.md */}
+            <ThreatsOpportunities
+              pending={pending}
+              filters={filters}
+              onFilterChange={setFilters}
+            />
             {/* "Ask your queue" Insights AI affordance · console pattern. */}
             <InsightsPanel />
           </div>

@@ -1,40 +1,34 @@
 import type { ActionItem } from "@test-data";
-import type { ComponentType } from "react";
 import { ageMinutes, ageLabel, slaState } from "../data/helpers";
 import type { PendingFilters } from "./FilterStrip";
-import { InboxIcon, ClockIcon, BoltIcon, AlertIcon } from "./Icon";
+import { MaterialSymbol } from "./MaterialSymbol";
 
 /**
- * Stat-board treatment of the rollup · enhanced per the
- * intelligent-console-design skill.
+ * Core metrics grid · console-revamp/components.md MetricCard pattern.
  *
- * Each tile now carries Principle #2 in full:
- *   - The raw value (text-display)
- *   - A target line (`Target: <X>`)
- *   - A delta vs. the prior period (color-coded by polarity — read the
- *     skill's voice doc; a falling Open count is GOOD, a rising
- *     Past-SLA count is BAD)
+ * Per the canonical console anatomy:
+ *   - bar_chart icon header + label (13px / 500)
+ *   - hero value: 28px / 600 / tabular
+ *   - delta line: 12px tabular + arrow + "From yesterday"
+ *   - target line: 12px muted "Target: X"
  *
- * Past-SLA tile keeps the pulse-dot indicator when count > 0.
- *
- * Mock comparative baselines (`compareTo` numbers) are baked in here
- * because the skill explicitly says "Mock data is fine and expected.
- * The console's whole point is the *shape* of operational data."
+ * Polarity rule per voice.md: every metric here is lower-is-better,
+ * so a negative delta is GOOD (green), positive is BAD (red).
  */
 
-/** Yesterday's baseline values (mocked — wire to real analytics later). */
+/** Yesterday's snapshot · mocked (skill permits — wire to analytics later). */
 const COMPARE_TO = {
   total: 28,
-  oldestMins: 9 * 60 + 30, // 9h 30m
+  oldestMins: 9 * 60 + 30,
   unassigned: 6,
   pastSla: 0,
 };
 
 const TARGETS = {
-  total: 50, // queue cap before manager rebalance is required
-  oldestMins: 4 * 60, // 4h SLA bar
-  unassigned: 0,
-  pastSla: 0,
+  total: "< 50",
+  oldest: "< 4h",
+  unassigned: "0",
+  pastSla: "0",
 };
 
 export function RollupStrip({
@@ -54,22 +48,9 @@ export function RollupStrip({
   );
   const oldestLabel =
     total === 0 ? "—" : ageLabel(oldestMins).replace(/\s*ago$/, "");
-  const hasPastSlaOldest = pending.some(
-    (i) => slaState(i) === "past" && ageMinutes(i) === oldestMins
-  );
-  const oldestTone: Tone = total === 0
-    ? "neutral"
-    : hasPastSlaOldest
-    ? "danger"
-    : oldestMins >= 240
-    ? "warning"
-    : "neutral";
 
   const unassigned = pending.filter((i) => !i.assignee_user_id).length;
-  const unassignedTone: Tone = unassigned === 0 ? "neutral" : "warning";
-
   const pastSla = pending.filter((i) => slaState(i) === "past").length;
-  const pastSlaTone: Tone = pastSla === 0 ? "neutral" : "danger";
 
   const allActive =
     filters.assignment === "all" &&
@@ -77,137 +58,120 @@ export function RollupStrip({
     !filters.repeatCaller &&
     filters.search.trim().length === 0;
 
-  // For Open: a falling count is GOOD (queue is draining)
-  // For Oldest: a falling number is GOOD (no aging blockers)
-  // For Unassigned: a falling number is GOOD
-  // For Past SLA: a falling number is GOOD (zero is the target)
-  // All four metrics share the "lower is better" polarity for this product.
-
   return (
-    <div
-      className="grid flex-shrink-0 grid-cols-4 gap-3 border-b border-border-subtle bg-surface-background px-5 py-4"
-      role="group"
-      aria-label="Queue health summary"
-    >
-      <Tile
-        icon={InboxIcon}
-        label="open"
-        value={total.toLocaleString()}
-        target={`Target: < ${TARGETS.total}`}
-        deltaPct={pctChange(total, COMPARE_TO.total)}
-        lowerIsBetter
-        tone="neutral"
-        ariaLabel={`${total} open action items. ${comparativeText(total, COMPARE_TO.total, "yesterday")}.`}
-        active={allActive}
-        onClick={() =>
-          onFilterChange({
-            ...filters,
-            assignment: "all",
-            age: "all",
-            repeatCaller: false,
-          })
-        }
-      />
-      <Tile
-        icon={ClockIcon}
-        label="oldest"
-        value={oldestLabel}
-        target={`Target: < 4h`}
-        deltaPct={pctChange(oldestMins, COMPARE_TO.oldestMins)}
-        lowerIsBetter
-        tone={oldestTone}
-        ariaLabel={
-          total === 0
-            ? "No items in queue."
-            : `Oldest item ${oldestLabel}. Target: under 4 hours.`
-        }
-        disabled={total === 0}
-        onClick={() => {
-          onFilterChange({ ...filters, search: "" });
-          window.requestAnimationFrame(() => {
-            const firstRow = document.querySelector("[data-pending-row]");
-            firstRow?.scrollIntoView({ behavior: "smooth", block: "start" });
-          });
-        }}
-      />
-      <Tile
-        icon={BoltIcon}
-        label="unassigned"
-        value={unassigned.toLocaleString()}
-        target={`Target: 0`}
-        deltaPct={pctChange(unassigned, COMPARE_TO.unassigned)}
-        lowerIsBetter
-        tone={unassignedTone}
-        ariaLabel={`${unassigned} unassigned. Target: zero.`}
-        active={filters.assignment === "unassigned"}
-        disabled={unassigned === 0}
-        onClick={() =>
-          onFilterChange({ ...filters, assignment: "unassigned" })
-        }
-      />
-      <Tile
-        icon={AlertIcon}
-        label="past SLA"
-        value={pastSla.toLocaleString()}
-        target={`Target: 0`}
-        deltaPct={pctChange(pastSla, COMPARE_TO.pastSla)}
-        lowerIsBetter
-        tone={pastSlaTone}
-        ariaLabel={`${pastSla} past SLA. Target: zero.`}
-        active={filters.age === "past_sla"}
-        disabled={pastSla === 0}
-        pulse={pastSla > 0}
-        onClick={() => onFilterChange({ ...filters, age: "past_sla" })}
-      />
+    <div className="border-b border-border-subtle bg-surface-background px-5 py-5">
+      {/* Section header per console pattern: H2 + one-sentence description */}
+      <div className="mb-4">
+        <h2 className="text-section-h2 text-text-primary">Core metrics</h2>
+        <p className="mt-0.5 text-section-desc text-text-secondary">
+          Targets and trend at a glance.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <MetricCard
+          icon="inbox"
+          label="Open"
+          value={total.toLocaleString()}
+          target={`Target: ${TARGETS.total}`}
+          deltaPct={pctChange(total, COMPARE_TO.total)}
+          lowerIsBetter
+          active={allActive}
+          onClick={() =>
+            onFilterChange({
+              ...filters,
+              assignment: "all",
+              age: "all",
+              repeatCaller: false,
+            })
+          }
+          ariaLabel={`${total} open. ${comparativeText(total, COMPARE_TO.total)} yesterday.`}
+        />
+        <MetricCard
+          icon="schedule"
+          label="Oldest"
+          value={oldestLabel}
+          target={`Target: ${TARGETS.oldest}`}
+          deltaPct={pctChange(oldestMins, COMPARE_TO.oldestMins)}
+          lowerIsBetter
+          warning={total > 0 && oldestMins >= 240}
+          disabled={total === 0}
+          onClick={() => {
+            onFilterChange({ ...filters, search: "" });
+            window.requestAnimationFrame(() => {
+              const firstRow = document.querySelector("[data-pending-row]");
+              firstRow?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          }}
+          ariaLabel={total === 0 ? "No items in queue." : `Oldest ${oldestLabel}.`}
+        />
+        <MetricCard
+          icon="person_off"
+          label="Unassigned"
+          value={unassigned.toLocaleString()}
+          target={`Target: ${TARGETS.unassigned}`}
+          deltaPct={pctChange(unassigned, COMPARE_TO.unassigned)}
+          lowerIsBetter
+          warning={unassigned > 0}
+          active={filters.assignment === "unassigned"}
+          disabled={unassigned === 0}
+          onClick={() => onFilterChange({ ...filters, assignment: "unassigned" })}
+          ariaLabel={`${unassigned} unassigned.`}
+        />
+        <MetricCard
+          icon="warning"
+          label="Past SLA"
+          value={pastSla.toLocaleString()}
+          target={`Target: ${TARGETS.pastSla}`}
+          deltaPct={pctChange(pastSla, COMPARE_TO.pastSla)}
+          lowerIsBetter
+          threat={pastSla > 0}
+          pulse={pastSla > 0}
+          active={filters.age === "past_sla"}
+          disabled={pastSla === 0}
+          onClick={() => onFilterChange({ ...filters, age: "past_sla" })}
+          ariaLabel={`${pastSla} past SLA.`}
+        />
+      </div>
     </div>
   );
 }
 
-type Tone = "neutral" | "warning" | "danger";
-
-const TONE: Record<Tone, { value: string; icon: string }> = {
-  neutral: {
-    value: "text-text-primary",
-    icon: "text-text-tertiary bg-surface-subtle",
-  },
-  warning: {
-    value: "text-status-warning-ink",
-    icon: "text-status-warning-ink bg-status-warning-soft",
-  },
-  danger: {
-    value: "text-status-past",
-    icon: "text-status-past bg-status-past-soft",
-  },
-};
-
-function Tile({
-  icon: Icon,
+function MetricCard({
+  icon,
   label,
   value,
   target,
   deltaPct,
   lowerIsBetter,
-  tone,
-  ariaLabel,
+  warning,
+  threat,
+  pulse,
   active,
   disabled,
-  pulse,
+  ariaLabel,
   onClick,
 }: {
-  icon: ComponentType<{ size?: number }>;
+  icon: string;
   label: string;
   value: string;
   target: string;
   deltaPct: number | null;
   lowerIsBetter?: boolean;
-  tone: Tone;
-  ariaLabel: string;
+  warning?: boolean;
+  threat?: boolean;
+  pulse?: boolean;
   active?: boolean;
   disabled?: boolean;
-  pulse?: boolean;
+  ariaLabel: string;
   onClick: () => void;
 }) {
-  const t = TONE[tone];
+  const valueClass = threat
+    ? "text-status-past"
+    : warning
+    ? "text-status-warning"
+    : "text-text-primary";
+
   return (
     <button
       type="button"
@@ -215,42 +179,39 @@ function Tile({
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={active ? true : undefined}
-      className={`group relative flex h-[112px] flex-col items-start gap-2 rounded-lg border bg-surface-card px-4 py-3 text-left transition-all duration-150 ${
+      className={`group relative flex flex-col items-start rounded-lg border bg-surface-card px-5 py-4 text-left transition-all duration-150 ${
         disabled
           ? "cursor-default border-border-subtle opacity-60"
           : active
-          ? "border-brand-purple bg-brand-purple-soft/40 ring-1 ring-brand-purple/30"
-          : "border-border-subtle hover:-translate-y-px hover:border-border-strong hover:shadow-sm"
+          ? "border-brand-purple ring-1 ring-brand-purple/30"
+          : "border-border-subtle hover:border-border-strong hover:shadow-e1"
       }`}
     >
-      {/* Header · icon + label · pulse indicator slot */}
+      {/* Header · bar_chart-style icon + label */}
       <div className="flex w-full items-center justify-between">
-        <span
-          className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${t.icon}`}
-        >
-          <Icon size={16} />
-        </span>
-        <span className="flex items-center gap-1.5">
-          {pulse ? <span className="pulse-dot" aria-hidden /> : null}
-          <span className="text-meta-label text-text-secondary">{label}</span>
-        </span>
+        <div className="flex items-center gap-2 text-text-secondary">
+          <MaterialSymbol name={icon} size={20} />
+          <span className="text-card-title">{label}</span>
+        </div>
+        {pulse ? <span className="pulse-dot" aria-hidden /> : null}
       </div>
 
       {/* Hero number */}
-      <span className={`text-display leading-none ${t.value}`}>
-        {value}
-      </span>
+      <div className={`mt-3 text-display ${valueClass}`}>{value}</div>
 
-      {/* Footer · target on the left, delta on the right */}
-      <div className="mt-auto flex w-full items-end justify-between text-[11px] leading-none">
-        <span className="text-text-tertiary">{target}</span>
-        <DeltaPill pct={deltaPct} lowerIsBetter={lowerIsBetter} />
+      {/* Delta line + "From yesterday" — per voice.md */}
+      <div className="mt-2 flex items-baseline gap-2">
+        <DeltaText pct={deltaPct} lowerIsBetter={lowerIsBetter} />
+        <span className="text-meta text-text-tertiary">From yesterday</span>
       </div>
+
+      {/* Target line */}
+      <div className="mt-1 text-meta text-text-tertiary">{target}</div>
     </button>
   );
 }
 
-function DeltaPill({
+function DeltaText({
   pct,
   lowerIsBetter,
 }: {
@@ -258,39 +219,32 @@ function DeltaPill({
   lowerIsBetter?: boolean;
 }) {
   if (pct === null) {
-    return <span className="text-text-tertiary">—</span>;
+    return <span className="text-delta text-text-tertiary">—</span>;
   }
-  // For metrics where lower-is-better:
-  //   negative delta = improvement = green
-  //   positive delta = regression  = red
-  // Neutral when |pct| < 1.
   const isNeutral = Math.abs(pct) < 1;
   const isImprovement = lowerIsBetter ? pct < 0 : pct > 0;
-  const color = isNeutral
+  const colour = isNeutral
     ? "text-text-tertiary"
     : isImprovement
     ? "text-status-ok"
     : "text-status-past";
   const arrow = isNeutral ? "·" : pct > 0 ? "↑" : "↓";
+  const sign = pct > 0 ? "+" : pct < 0 ? "-" : "";
   return (
-    <span className={`tabular font-semibold ${color}`}>
-      {arrow} {Math.abs(Math.round(pct))}%
+    <span className={`text-delta ${colour}`}>
+      {arrow} {sign}{Math.abs(Math.round(pct))}%
     </span>
   );
 }
 
 function pctChange(current: number, prior: number): number | null {
   if (prior === 0 && current === 0) return 0;
-  if (prior === 0) return 100; // "from nothing to something" — treat as a 100% rise
+  if (prior === 0) return 100;
   return ((current - prior) / prior) * 100;
 }
 
-function comparativeText(
-  current: number,
-  prior: number,
-  windowLabel: string
-): string {
-  if (current === prior) return `Unchanged vs ${windowLabel}`;
-  if (current > prior) return `Up from ${prior} ${windowLabel}`;
-  return `Down from ${prior} ${windowLabel}`;
+function comparativeText(current: number, prior: number): string {
+  if (current === prior) return "Unchanged from";
+  if (current > prior) return `Up from ${prior}`;
+  return `Down from ${prior}`;
 }

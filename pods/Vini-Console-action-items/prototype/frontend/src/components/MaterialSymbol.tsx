@@ -1,13 +1,14 @@
 import type { CSSProperties } from "react";
 
 /**
- * Material Symbols Rounded wrapper.
+ * Material Symbols Outlined wrapper.
  *
- * Per Spyne DESIGN_SYSTEM v1 + the intelligent-console-design skill:
- *   - Use Material Symbols Rounded, weight 400, fill 0 by default
- *   - Switch to fill 1 only for active / selected states
- *   - Allowed sizes: 14 | 16 | 20 | 24 (the skill calls these out as the
- *     canonical rhythm; this component clamps to those four)
+ * Per Spyne Intelligent Console design system (console-revamp/iconography.md):
+ *   - Use Material Symbols Outlined, weight 400, fill 0 by default
+ *   - Switch to fill 1 only for selected / active nav items
+ *   - Allowed sizes per tokens.md: 16 (inline) | 20 (card header) |
+ *     22 (nav rail) | 24 (section lead). This component clamps to
+ *     14 | 16 | 20 | 24.
  *
  * Glyphs are font ligatures, so `name` is the ligature string ("call",
  * "schedule", "warning", etc.). The span carries `aria-hidden` so screen
@@ -41,7 +42,7 @@ export function MaterialSymbol({
   const px = clampSize(size);
   return (
     <span
-      className={`material-symbols-rounded select-none ${className ?? ""}`}
+      className={`material-symbols-outlined select-none ${className ?? ""}`}
       style={{
         fontSize: `${px}px`,
         lineHeight: 1,
