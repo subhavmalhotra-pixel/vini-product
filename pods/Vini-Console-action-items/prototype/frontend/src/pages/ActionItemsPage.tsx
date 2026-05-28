@@ -15,6 +15,7 @@ import { CloseDrawer } from "../components/CloseDrawer";
 import { BulkCloseDrawer } from "../components/BulkCloseDrawer";
 import { SourceDrawer } from "../components/SourceDrawer";
 import { HelpDrawer } from "../components/HelpDrawer";
+import { InsightsPanel } from "../components/InsightsPanel";
 import { ClipboardListIcon, ClockIcon, CheckIcon } from "../components/Icon";
 
 const ASSIGNMENT_FILTER_KEY = "vini.actionItems.assignmentFilter";
@@ -158,19 +159,41 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Page header — title · meta · phase-2 ghost · tabs */}
+      {/* Page header · attention-question framing per intelligent-console-design. */}
       <div className="border-b border-border-subtle bg-surface-card px-5 pt-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-purple text-white shadow-xs">
-              <ClipboardListIcon size={17} />
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-purple text-white">
+              <ClipboardListIcon size={20} />
             </span>
             <div>
-              <h1 className="text-[20px] font-semibold leading-tight tracking-tight text-text-primary">
-                Action Items
+              <div className="text-eyebrow text-text-tertiary">Action items</div>
+              <h1 className="mt-1 text-page-title text-text-primary">
+                What needs your attention?
               </h1>
-              <p className="mt-0.5 text-[12px] text-text-tertiary">
-                Customer tasks waiting on the team
+              <p className="mt-1 text-[13px] leading-snug text-text-secondary">
+                <span className="tabular font-semibold text-text-primary">
+                  {pending.length}
+                </span>{" "}
+                customer task{pending.length === 1 ? "" : "s"} open
+                {pending.filter((i) => slaState(i) === "past").length > 0 ? (
+                  <>
+                    {" · "}
+                    <span className="tabular font-semibold text-status-past">
+                      {pending.filter((i) => slaState(i) === "past").length}{" "}
+                      past SLA
+                    </span>
+                  </>
+                ) : null}
+                {pending.filter((i) => !i.assignee_user_id).length > 0 ? (
+                  <>
+                    {" · "}
+                    <span className="tabular font-semibold text-status-warning-ink">
+                      {pending.filter((i) => !i.assignee_user_id).length}{" "}
+                      unassigned
+                    </span>
+                  </>
+                ) : null}
               </p>
             </div>
           </div>
@@ -186,7 +209,7 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
               onClick={() => setHelpOpen(true)}
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts (press ?)"
-              className="flex h-8 w-8 items-center justify-center rounded-md border border-border-subtle bg-surface-card text-[13px] font-mono font-semibold text-text-secondary shadow-xs transition-all duration-150 hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple hover:shadow-sm"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-border-subtle bg-surface-card text-[13px] font-mono font-semibold text-text-secondary transition-all duration-150 hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple"
             >
               ?
             </button>
@@ -240,6 +263,8 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
                 />
               ))
             )}
+            {/* "Ask your queue" Insights AI affordance · console pattern. */}
+            <InsightsPanel />
           </div>
         </>
       ) : (

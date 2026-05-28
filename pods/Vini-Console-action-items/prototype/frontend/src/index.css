@@ -95,6 +95,20 @@
     @apply text-[10px] font-semibold uppercase tracking-widest;
   }
 
+  /* Material Symbols Rounded — keep glyphs vertically centred with text
+     and respect tabular-style baseline alignment. */
+  .material-symbols-rounded {
+    font-family: "Material Symbols Rounded";
+    font-weight: 400;
+    font-style: normal;
+    display: inline-block;
+    vertical-align: -0.15em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-feature-settings: "liga";
+    font-feature-settings: "liga";
+  }
+
   /* Pulsing dot — used to flag past-SLA rows + the Past SLA stat tile.
      Subtle on light backgrounds; matches the Spyne live-status pattern. */
   .pulse-dot {
