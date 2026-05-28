@@ -16,7 +16,7 @@ const DOCS: DocMeta[] = [
     slug: "signal",
     title: "Customer Signal",
     subtitle:
-      "Vini Console — Action Items · validated customer signal · 4 pillars · 13 quotes · 7 data points",
+      "Vini Console — Action Items · v3 · 3-pillar lifecycle (Create / Manage / Communicate) · 13 quotes · 10 data points",
     badge: "Signal",
     file: "/docs/signal-console-action-items.md",
   },
@@ -24,7 +24,7 @@ const DOCS: DocMeta[] = [
     slug: "prd",
     title: "Product Requirements (PRD) — full detail",
     subtitle:
-      "Vini Console — Action Items (Phase 1) · v2.1 · 10 sections · 18-row Section 3 non-goals · 8-stream Section 8.2 Phase 2 · cross-pod schema signed off",
+      "Vini Console — Action Items (Phase 1) · v3.0 · 22-row Section 3 non-goals · 11-stream Section 8.2 (A/B/C buckets) · 3 new lifecycle events · cross-pod schema signed off",
     badge: "PRD",
     file: "/docs/prd-console-action-items.md",
   },
@@ -32,9 +32,25 @@ const DOCS: DocMeta[] = [
     slug: "prd-grooming",
     title: "PRD — grooming snippet",
     subtitle:
-      "5-minute condensed view: TL;DR · phase split · non-goals at a glance · Phase 2 work-stream index · kill criteria short list. Links back to the full PRD for detail.",
+      "5-minute condensed view: 3-stage TL;DR · phase split by stage · non-goals at a glance · Phase 2 work streams clustered A/B/C · kill criteria short list.",
     badge: "Grooming",
     file: "/docs/prd-console-action-items-grooming.md",
+  },
+  {
+    slug: "icp",
+    title: "ICPs — BDC Agent + BDC Manager",
+    subtitle:
+      "Two personas (Madison · Anya) anchored to Signal v3 · JTBD · pains mapped to lifecycle pillars · 12-affordance design contract that drives the Phase 1 UI.",
+    badge: "ICP",
+    file: "/docs/icp-console-action-items.md",
+  },
+  {
+    slug: "design",
+    title: "Design — Phase 1 implementation plan",
+    subtitle:
+      "Non-complex single-screen UI · 12 affordances spec'd · interaction patterns · empty/loading/error · accessibility checklist · 12-edit prototype punch list.",
+    badge: "Design",
+    file: "/docs/design-console-action-items.md",
   },
 ];
 
@@ -69,7 +85,11 @@ export function DocsIndexPage() {
                     ? "bg-status-ok-soft text-status-ok"
                     : doc.slug === "prd-grooming"
                       ? "bg-status-warning-soft text-status-warning"
-                      : "bg-brand-purple-soft text-brand-purple"
+                      : doc.slug === "icp"
+                        ? "bg-dept-sales-soft text-dept-sales"
+                        : doc.slug === "design"
+                          ? "bg-dept-service-soft text-dept-service"
+                          : "bg-brand-purple-soft text-brand-purple"
                 }`}
               >
                 {doc.slug === "signal" ? (
@@ -176,7 +196,11 @@ export function DocsViewerPage() {
               ? "bg-status-ok-soft text-status-ok"
               : doc.slug === "prd-grooming"
                 ? "bg-status-warning-soft text-status-warning"
-                : "bg-brand-purple-soft text-brand-purple"
+                : doc.slug === "icp"
+                  ? "bg-dept-sales-soft text-dept-sales"
+                  : doc.slug === "design"
+                    ? "bg-dept-service-soft text-dept-service"
+                    : "bg-brand-purple-soft text-brand-purple"
           }`}
         >
           {doc.badge}

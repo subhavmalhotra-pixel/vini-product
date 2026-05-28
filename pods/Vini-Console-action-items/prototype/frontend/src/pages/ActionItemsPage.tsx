@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { ActionItem } from "@test-data";
-import { CURRENT_USER_ID, getActionItems } from "../data/store";
-import { useStore } from "../data/useStore";
+import { getActionItems, getCurrentUserId } from "../data/store";
+import { useStore, useCurrentUser } from "../data/useStore";
+import { useActionItemsKeyboard } from "../data/useKeyboard";
 import { ageMinutes, slaState, deptOf } from "../data/helpers";
 import { FilterStrip, type PendingFilters } from "../components/FilterStrip";
+import { RollupStrip } from "../components/RollupStrip";
 import { PendingRow } from "../components/PendingRow";
 import { CompletedView } from "../components/CompletedView";
 import { EmptyState } from "../components/EmptyState";
@@ -12,72 +14,185 @@ import { AssignDrawer } from "../components/AssignDrawer";
 import { CloseDrawer } from "../components/CloseDrawer";
 import { BulkCloseDrawer } from "../components/BulkCloseDrawer";
 import { SourceDrawer } from "../components/SourceDrawer";
+import { HelpDrawer } from "../components/HelpDrawer";
 import { ClipboardListIcon, ClockIcon, CheckIcon } from "../components/Icon";
 
-const INITIAL_FILTERS: PendingFilters = {
-  assignment: "all",
-  intentIds: [],
-  channels: [],
-  age: "all",
-  dept: "all",
-  search: "",
-};
+const ASSIGNMENT_FILTER_KEY = "vini.actionItems.assignmentFilter";
+
+function buildInitialFilters(role: string | undefined): PendingFilters {
+  // Phase 1 design contract #11 — role-aware default. BDC Agents land on
+  // "Mine"; everyone else lands on "All". Last-used value persists per user
+  // in localStorage and overrides the role default after the first session.
+  let persistedAssignment: PendingFilters["assignment"] | null = null;
+  if (typeof window !== "undefined") {
+    try {
+      const stored = window.localStorage.getItem(
+        `${ASSIGNMENT_FILTER_KEY}.${getCurrentUserId()}`
+      );
+      if (
+        stored === "all" ||
+        stored === "mine" ||
+        stored === "others" ||
+        stored === "unassigned"
+      ) {
+        persistedAssignment = stored;
+      }
+    } catch {
+      // localStorage unavailable — fall through to role default
+    }
+  }
+
+  return {
+    assignment:
+      persistedAssignment ?? (role === "bdc_agent" ? "mine" : "all"),
+    intentIds: [],
+    channels: [],
+    age: "all",
+    dept: "all",
+    search: "",
+    repeatCaller: false,
+  };
+}
 
 export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
   useStore();
-  const [filters, setFilters] = useState<PendingFilters>(INITIAL_FILTERS);
+  const { user, userId } = useCurrentUser();
+
+  // Re-seed initial filters when the active user changes (persona switcher).
+  const [filters, setFiltersState] = useState<PendingFilters>(() =>
+    buildInitialFilters(user?.role)
+  );
+
+  // Re-build defaults whenever the active user changes (persona switcher
+  // in TopHeader). The persisted value, if any, takes precedence.
+  const lastUserIdRef = useRef(userId);
+  useEffect(() => {
+    if (lastUserIdRef.current !== userId) {
+      lastUserIdRef.current = userId;
+      setFiltersState(buildInitialFilters(user?.role));
+    }
+  }, [userId, user?.role]);
+
+  const setFilters = useCallback((next: PendingFilters) => {
+    setFiltersState(next);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(
+          `${ASSIGNMENT_FILTER_KEY}.${getCurrentUserId()}`,
+          next.assignment
+        );
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   const [assignItem, setAssignItem] = useState<ActionItem | null>(null);
   const [closeItem, setCloseItem] = useState<ActionItem | null>(null);
   const [sourceItem, setSourceItem] = useState<ActionItem | null>(null);
   const [bulkItems, setBulkItems] = useState<ActionItem[] | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   const pending = getActionItems("pending");
   const completed = getActionItems("completed");
 
   const filteredPending = useMemo(
-    () => filterAndSortPending(pending, filters),
-    [pending, filters]
+    () => filterAndSortPending(pending, filters, userId),
+    [pending, filters, userId]
   );
 
-  const unassigned = pending.filter((i) => !i.assignee_user_id).length;
-  const escalated = pending.filter((i) => i.escalation_reason).length;
   const isPending = tab === "pending";
+
+  // Keep focusedIndex in range when the filtered list changes
+  useEffect(() => {
+    if (filteredPending.length === 0) {
+      setFocusedIndex(-1);
+    } else if (focusedIndex >= filteredPending.length) {
+      setFocusedIndex(filteredPending.length - 1);
+    }
+  }, [filteredPending.length, focusedIndex]);
+
+  const focusedItem =
+    focusedIndex >= 0 ? filteredPending[focusedIndex] : null;
+
+  const anyDrawerOpen =
+    !!assignItem || !!closeItem || !!sourceItem || !!bulkItems || helpOpen;
+
+  useActionItemsKeyboard(
+    useMemo(
+      () => ({
+        onNext: () => {
+          if (filteredPending.length === 0) return;
+          setFocusedIndex((i) =>
+            Math.min(filteredPending.length - 1, i < 0 ? 0 : i + 1)
+          );
+        },
+        onPrev: () => {
+          if (filteredPending.length === 0) return;
+          setFocusedIndex((i) => Math.max(0, i < 0 ? 0 : i - 1));
+        },
+        onAssign: () => {
+          if (focusedItem) setAssignItem(focusedItem);
+        },
+        onClose: () => {
+          if (focusedItem) setCloseItem(focusedItem);
+        },
+        onListen: () => {
+          if (focusedItem) setSourceItem(focusedItem);
+        },
+        onHelp: () => setHelpOpen(true),
+      }),
+      [filteredPending.length, focusedItem]
+    ),
+    isPending && !anyDrawerOpen
+  );
+
+  // Scroll the focused row into view when J/K navigation moves the focus.
+  useEffect(() => {
+    if (focusedIndex < 0) return;
+    const rows = document.querySelectorAll("[data-pending-row]");
+    const el = rows[focusedIndex] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [focusedIndex]);
 
   return (
     <div className="flex h-full flex-col">
-      {/* Page header */}
+      {/* Page header — title + tabs + Phase 2 hook (Add action) + Help */}
       <div className="border-b border-border-subtle bg-white px-5 pt-4">
-        <div className="flex items-baseline justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-purple text-white">
               <ClipboardListIcon size={14} />
             </span>
             <h1 className="text-lg font-bold text-text-primary">Action Items</h1>
-            <div className="ml-2 flex items-center gap-2 text-[12px] text-text-secondary">
-              <span className="tabular font-semibold">
-                {pending.length} pending
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Phase 2 hook — Add action manually (BDC agents) */}
+            <button
+              type="button"
+              disabled
+              title="Manual creation lands in Phase 2 — see /docs/prd-grooming"
+              className="inline-flex cursor-not-allowed items-center gap-1 rounded-md border border-border-subtle bg-white px-2.5 py-1 text-[12px] font-medium text-text-tertiary"
+            >
+              + Add action
+              <span className="rounded bg-surface-subtle px-1 py-px text-[9px] font-bold tracking-wide text-text-tertiary">
+                PHASE 2
               </span>
-              {unassigned > 0 ? (
-                <>
-                  <span className="text-text-tertiary">·</span>
-                  <span className="tabular text-status-warning">
-                    {unassigned} unassigned
-                  </span>
-                </>
-              ) : null}
-              {escalated > 0 ? (
-                <>
-                  <span className="text-text-tertiary">·</span>
-                  <span className="tabular font-semibold text-status-past">
-                    {escalated} escalated
-                  </span>
-                </>
-              ) : null}
-            </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (press ?)"
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle bg-white text-[12px] font-mono font-bold text-text-secondary hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple"
+            >
+              ?
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs — Pending / Completed (+ disabled Team tab as Phase 2 hook) */}
         <nav className="mt-3 -mb-px flex items-center gap-0">
           <TabLink to="/action-items/pending" active={isPending}>
             <ClockIcon size={13} />
@@ -89,11 +204,26 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
             Completed
             <TabBadge active={!isPending}>{completed.length}</TabBadge>
           </TabLink>
+          <span
+            className="flex cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent px-3 pb-2.5 pt-1 text-[13px] font-semibold text-text-tertiary opacity-70"
+            title="Manager dashboard lands in Phase 2"
+          >
+            Team
+            <span className="rounded bg-surface-subtle px-1 py-px text-[9px] font-bold tracking-wide text-text-tertiary">
+              PHASE 2
+            </span>
+          </span>
         </nav>
       </div>
 
       {isPending ? (
         <>
+          {/* Lite-rollup strip (Phase 1 design contract #9) */}
+          <RollupStrip
+            pending={pending}
+            filters={filters}
+            onFilterChange={setFilters}
+          />
           <FilterStrip filters={filters} onChange={setFilters} />
           <div className="flex-1 overflow-y-auto scroll-thin">
             {filteredPending.length === 0 ? (
@@ -101,10 +231,12 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
                 variant={pending.length === 0 ? "all_clear" : "no_matches"}
               />
             ) : (
-              filteredPending.map((item) => (
+              filteredPending.map((item, idx) => (
                 <PendingRow
                   key={item.action_item_id}
                   item={item}
+                  focused={idx === focusedIndex}
+                  onFocus={() => setFocusedIndex(idx)}
                   onAssign={setAssignItem}
                   onClose={setCloseItem}
                   onListen={setSourceItem}
@@ -134,6 +266,7 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
         onOpenSource={setSourceItem}
       />
       <SourceDrawer item={sourceItem} onClose={() => setSourceItem(null)} />
+      <HelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }
@@ -183,15 +316,16 @@ function TabBadge({
 
 function filterAndSortPending(
   items: ActionItem[],
-  f: PendingFilters
+  f: PendingFilters,
+  currentUserId: string
 ): ActionItem[] {
   let out = items;
 
   if (f.assignment === "mine") {
-    out = out.filter((i) => i.assignee_user_id === CURRENT_USER_ID);
+    out = out.filter((i) => i.assignee_user_id === currentUserId);
   } else if (f.assignment === "others") {
     out = out.filter(
-      (i) => i.assignee_user_id && i.assignee_user_id !== CURRENT_USER_ID
+      (i) => i.assignee_user_id && i.assignee_user_id !== currentUserId
     );
   } else if (f.assignment === "unassigned") {
     out = out.filter((i) => !i.assignee_user_id);
@@ -239,6 +373,11 @@ function filterAndSortPending(
     });
   }
 
+  // Phase 1 design contract #6 — repeat-caller filter
+  if (f.repeatCaller) {
+    out = out.filter((i) => i.repeat_caller_count >= 3);
+  }
+
   if (f.search.trim()) {
     const q = f.search.trim().toLowerCase();
     out = out.filter(
@@ -261,3 +400,4 @@ function filterAndSortPending(
 
   return out;
 }
+

@@ -34,6 +34,13 @@ const QUICK_ACTIONS: QuickAction[] = [
     note: "Sent itemized quote via email; awaiting customer confirmation.",
     type: "info_provided",
   },
+  // Phase 1 design contract #7 — fifth canned chip · covers Madison's 5th
+  // most-common closure path so 1-tap close stays viable.
+  {
+    label: "Info provided",
+    note: "Provided the requested information; no further action needed.",
+    type: "info_provided",
+  },
   {
     label: "Customer requested DNC",
     note: "Customer requested DNC; flagged in CRM and removed from marketing audiences.",

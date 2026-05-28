@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import type { ComponentType, ReactNode } from "react";
+import { useCurrentUser } from "../data/useStore";
+import { listUsers } from "../data/store";
 import {
   HomeIcon,
   FilmIcon,
@@ -99,6 +101,20 @@ function SideRail() {
 }
 
 function TopHeader() {
+  const { user, userId, setUserId } = useCurrentUser();
+
+  // Pre-select two demo personas for the switcher: a BDC Agent (Madison
+  // analogue = Marcus Reid · u-marcus) and a BDC Manager (Anya analogue =
+  // Trevor Diaz · u-trevor). Service Manager Anya Kim (u-anya) is kept as
+  // a third option since she's the default seed.
+  const personaOptions = listUsers().filter(
+    (u) =>
+      u.user_id === "u-marcus" ||
+      u.user_id === "u-trevor" ||
+      u.user_id === "u-anya" ||
+      u.user_id === "u-edgar"
+  );
+
   return (
     <header className="flex h-12 flex-shrink-0 items-center justify-between border-b border-border-subtle bg-white px-5">
       <div className="flex items-center gap-2.5">
@@ -119,7 +135,7 @@ function TopHeader() {
         <Link
           to="/docs"
           className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-white px-2.5 py-1 text-xs font-medium text-text-secondary hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple"
-          title="Signal + PRD"
+          title="Signal + PRD + ICP + Design"
         >
           <MailEnvelopeIcon size={13} /> Docs
         </Link>
@@ -134,22 +150,59 @@ function TopHeader() {
         <button className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-white px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-surface-subtle">
           <GlobeIcon size={14} /> Website
         </button>
+
+        {/* Persona switcher — demo affordance only. Drives the role-aware
+            initial-filter default in ActionItemsPage. */}
         <div className="flex items-center gap-2 border-l border-border-subtle pl-3">
-          <div className="text-right leading-tight">
-            <div className="text-xs font-medium text-text-primary">
-              Edgar Ceniceros
-            </div>
-            <div className="text-[10px] text-text-tertiary">
-              MB Laguna Niguel
-            </div>
-          </div>
+          <label
+            htmlFor="persona-switcher"
+            className="text-[10px] uppercase tracking-wide text-text-tertiary"
+          >
+            View as
+          </label>
+          <select
+            id="persona-switcher"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            className="rounded-md border border-border-subtle bg-white px-2 py-1 text-[11px] font-medium text-text-primary focus:border-brand-purple focus:outline-none"
+            aria-label="Switch active user persona"
+          >
+            {personaOptions.map((u) => (
+              <option key={u.user_id} value={u.user_id}>
+                {u.display_name} · {formatRole(u.role)}
+              </option>
+            ))}
+          </select>
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-purple text-[10px] font-bold text-white">
-            EC
+            {user?.avatar_initials ?? "?"}
           </div>
         </div>
       </div>
     </header>
   );
+}
+
+function formatRole(role: string): string {
+  switch (role) {
+    case "bdc_agent":
+      return "BDC Agent";
+    case "bdc_manager":
+      return "BDC Manager";
+    case "service_manager":
+      return "Service Mgr";
+    case "sales_manager":
+      return "Sales Mgr";
+    case "general_manager":
+      return "GM";
+    case "service_advisor":
+      return "Svc Advisor";
+    case "sales_advisor":
+      return "Sales Advisor";
+    case "dealer_principal":
+      return "Dealer Principal";
+    default:
+      return role;
+  }
 }
 
 type ViniNavItem = {

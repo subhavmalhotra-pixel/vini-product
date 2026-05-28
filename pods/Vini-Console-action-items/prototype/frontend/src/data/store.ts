@@ -12,7 +12,7 @@ import {
   CONVERSATIONS,
   USERS,
   INTENT_TAXONOMY,
-  CURRENT_USER_ID,
+  CURRENT_USER_ID as SEED_CURRENT_USER_ID,
   NOW_ISO,
   type ActionItem,
   type ActionItemStatus,
@@ -31,7 +31,56 @@ import {
 let _appointments: Appointment[] = [...APPOINTMENTS];
 
 // Re-export NOW_ISO so components can reference the prototype's fixed clock.
-export { NOW_ISO, CURRENT_USER_ID };
+export { NOW_ISO };
+
+/* =========================================================================
+   Active user — backed by localStorage so the persona switcher persists
+   across reloads. Used by:
+     - the "View as" toggle in AppShell TopHeader
+     - the "Mine" assignment filter in ActionItemsPage
+     - default values in mutations (assignedBy / closedBy)
+   ========================================================================= */
+
+const CURRENT_USER_KEY = "vini.actionItems.currentUserId";
+
+function _readStoredUserId(): string {
+  if (typeof window === "undefined") return SEED_CURRENT_USER_ID;
+  try {
+    const stored = window.localStorage.getItem(CURRENT_USER_KEY);
+    if (stored && USERS.some((u) => u.user_id === stored)) {
+      return stored;
+    }
+  } catch {
+    // localStorage may be unavailable (incognito / SSR) — fall through.
+  }
+  return SEED_CURRENT_USER_ID;
+}
+
+let _currentUserId = _readStoredUserId();
+
+export function getCurrentUserId(): string {
+  return _currentUserId;
+}
+
+export function setCurrentUserId(id: string): void {
+  if (!USERS.some((u) => u.user_id === id)) return;
+  _currentUserId = id;
+  try {
+    window.localStorage.setItem(CURRENT_USER_KEY, id);
+  } catch {
+    // ignore
+  }
+  _notify();
+}
+
+/**
+ * Legacy export — kept for components that still read it as a constant.
+ * Engineers wiring backend: replace with `getCurrentUserId()` everywhere.
+ *
+ * NOTE: this is the SEED value, not the live one. Callers that need the
+ * live id (e.g. assignment-filter `"mine"`) must use `getCurrentUserId()`.
+ */
+export const CURRENT_USER_ID = SEED_CURRENT_USER_ID;
 
 // In-memory mutable copy (resets on hard refresh — perfect for prototype).
 let _items: ActionItem[] = [...ACTION_ITEMS];
@@ -133,7 +182,7 @@ function _emit(event: string, payload: Record<string, unknown>) {
 export function assignActionItem(
   actionItemId: string,
   assigneeUserId: string,
-  assignedByUserId: string = CURRENT_USER_ID,
+  assignedByUserId: string = getCurrentUserId(),
   reason?: string,
   viniInstructions?: string
 ) {
@@ -194,7 +243,7 @@ export function closeActionItem(
   actionItemId: string,
   resolutionType: ResolutionType,
   resolutionNote: string,
-  closedByUserId: string = CURRENT_USER_ID,
+  closedByUserId: string = getCurrentUserId(),
   appointment?: AppointmentInput
 ) {
   if (!resolutionNote || resolutionNote.length < 10) {
@@ -268,7 +317,7 @@ export function closeActionItem(
 export function reopenActionItem(
   actionItemId: string,
   reason: string,
-  reopenedByUserId: string = CURRENT_USER_ID
+  reopenedByUserId: string = getCurrentUserId()
 ) {
   const item = _items.find((i) => i.action_item_id === actionItemId);
   if (!item) return;

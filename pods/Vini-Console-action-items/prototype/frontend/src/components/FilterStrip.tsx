@@ -1,6 +1,6 @@
 import type { Channel, Dept, IntentId } from "@test-data";
 import { INTENT_TAXONOMY } from "@test-data";
-import { ChannelGlyph, SearchIcon, CloseIcon, FilterIcon } from "./Icon";
+import { ChannelGlyph, SearchIcon, CloseIcon, FilterIcon, RepeatIcon } from "./Icon";
 import { useState } from "react";
 
 export type AssignmentFilter = "all" | "mine" | "others" | "unassigned";
@@ -13,6 +13,8 @@ export type PendingFilters = {
   age: AgeFilter;
   dept: Dept | "all";
   search: string;
+  /** Phase 1 design contract affordance #6 — Anya filters to all repeat callers. */
+  repeatCaller: boolean;
 };
 
 const ASSIGNMENT_OPTIONS: { value: AssignmentFilter; label: string }[] = [
@@ -63,7 +65,8 @@ export function FilterStrip({
     (filters.assignment !== "all" ? 1 : 0) +
     (filters.age !== "all" ? 1 : 0) +
     (filters.dept !== "all" ? 1 : 0) +
-    (filters.search.trim() ? 1 : 0);
+    (filters.search.trim() ? 1 : 0) +
+    (filters.repeatCaller ? 1 : 0);
 
   return (
     <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle bg-white px-4 py-2">
@@ -186,6 +189,23 @@ export function FilterStrip({
         ) : null}
       </div>
 
+      {/* Repeat-caller toggle — Anya's escalation filter */}
+      <button
+        onClick={() =>
+          onChange({ ...filters, repeatCaller: !filters.repeatCaller })
+        }
+        title="Show only customers who pinged us 3+ times"
+        aria-label="Filter to repeat callers"
+        aria-pressed={filters.repeatCaller}
+        className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${
+          filters.repeatCaller
+            ? "border-status-warning bg-status-warning-soft text-status-warning"
+            : "border-border-subtle bg-white text-text-secondary hover:bg-surface-subtle"
+        }`}
+      >
+        <RepeatIcon size={12} /> Repeat
+      </button>
+
       {/* Dept toggle right side */}
       <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border-subtle">
         {(["all", "sales", "service"] as const).map((d) => (
@@ -213,6 +233,7 @@ export function FilterStrip({
               age: "all",
               dept: "all",
               search: "",
+              repeatCaller: false,
             })
           }
           className="text-[11px] font-medium text-brand-purple hover:underline"

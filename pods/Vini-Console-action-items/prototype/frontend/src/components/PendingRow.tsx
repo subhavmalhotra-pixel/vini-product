@@ -14,6 +14,9 @@ import { ChevronRightIcon, BoltIcon } from "./Icon";
 
 type Props = {
   item: ActionItem;
+  /** True when the keyboard shortcut focus is on this row. */
+  focused?: boolean;
+  onFocus?: () => void;
   onAssign: (item: ActionItem) => void;
   onClose: (item: ActionItem) => void;
   onListen: (item: ActionItem) => void;
@@ -32,6 +35,8 @@ type Props = {
  */
 export function PendingRow({
   item,
+  focused,
+  onFocus,
   onAssign,
   onClose,
   onListen,
@@ -49,9 +54,15 @@ export function PendingRow({
 
   return (
     <div
+      data-pending-row
       className={`border-b border-border-subtle bg-white ${
-        open ? "bg-surface-subtle" : "hover:bg-surface-subtle"
+        open
+          ? "bg-surface-subtle"
+          : focused
+          ? "bg-brand-purple-soft/30 hover:bg-surface-subtle"
+          : "hover:bg-surface-subtle"
       } transition-colors`}
+      onMouseEnter={onFocus}
     >
       {/* Collapsed row — click toggles expand */}
       <div
@@ -64,6 +75,7 @@ export function PendingRow({
             toggle();
           }
         }}
+        aria-expanded={open}
         className="grid cursor-pointer grid-cols-[14px_minmax(0,180px)_minmax(0,1fr)_70px_120px_minmax(70px,auto)_18px] items-center gap-3 px-4 py-2"
       >
         {/* Intent dept dot */}
@@ -80,7 +92,7 @@ export function PendingRow({
           {customer?.display_name ?? "Unknown"}
         </button>
 
-        {/* Intent + escalation badge + multi-intent hint */}
+        {/* Intent + escalation + repeat-caller + multi-intent — Phase 1 design contract #6 */}
         <div className="flex min-w-0 items-center gap-1.5">
           <IntentChip intentId={item.intent_id} />
           {item.escalation_reason ? (
@@ -91,6 +103,8 @@ export function PendingRow({
               <BoltIcon size={10} /> Escalated
             </span>
           ) : null}
+          {/* Repeat-caller chip surfaced on the COLLAPSED row (was expanded-only). */}
+          <RepeatCallerChip item={item} />
           {hasMultiIntent ? (
             <span
               className="inline-flex items-center rounded-full bg-brand-purple-soft px-1.5 py-0.5 text-[10px] font-semibold text-brand-purple"
@@ -138,7 +152,7 @@ export function PendingRow({
               {/* Conversation snippet with click-to-view-full */}
               <ConversationSnippet item={item} onViewFull={onListen} />
 
-              {/* Meta + badges */}
+              {/* Meta + badges — repeat-caller chip now lives on the collapsed row */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-tertiary">
                 <span className="font-mono text-[10px]">
                   {item.action_item_id}
@@ -149,7 +163,6 @@ export function PendingRow({
                     <span className="tabular">{customer.phone}</span>
                   </>
                 ) : null}
-                <RepeatCallerChip item={item} />
                 <EmailLoopBadge item={item} />
               </div>
             </div>
