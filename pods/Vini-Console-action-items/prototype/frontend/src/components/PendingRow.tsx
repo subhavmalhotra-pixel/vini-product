@@ -55,15 +55,27 @@ export function PendingRow({
   return (
     <div
       data-pending-row
-      className={`border-b border-border-subtle bg-white ${
+      className={`group relative border-b border-border-subtle bg-surface-card transition-colors duration-150 ease-smooth ${
         open
           ? "bg-surface-subtle"
           : focused
-          ? "bg-brand-purple-soft/30 hover:bg-surface-subtle"
-          : "hover:bg-surface-subtle"
-      } transition-colors`}
+          ? "bg-brand-purple-soft/40"
+          : "hover:bg-surface-subtle/70"
+      }`}
       onMouseEnter={onFocus}
     >
+      {/* Left accent bar — Linear-style row indicator */}
+      <span
+        aria-hidden
+        className={`absolute inset-y-0 left-0 w-[3px] transition-all duration-150 ease-smooth ${
+          open
+            ? "bg-brand-purple"
+            : focused
+            ? "bg-brand-purple/70"
+            : "bg-transparent group-hover:bg-border-strong/60"
+        }`}
+      />
+
       {/* Collapsed row — click toggles expand */}
       <div
         role="button"
@@ -76,7 +88,7 @@ export function PendingRow({
           }
         }}
         aria-expanded={open}
-        className="grid cursor-pointer grid-cols-[14px_minmax(0,180px)_minmax(0,1fr)_70px_120px_minmax(70px,auto)_18px] items-center gap-3 px-4 py-2"
+        className="grid cursor-pointer grid-cols-[14px_minmax(0,180px)_minmax(0,1fr)_70px_120px_minmax(70px,auto)_18px] items-center gap-3 px-5 py-2.5"
       >
         {/* Intent dept dot */}
         <IntentDot intentId={item.intent_id} />
@@ -129,8 +141,8 @@ export function PendingRow({
 
         {/* Chevron */}
         <span
-          className={`flex h-4 w-4 items-center justify-center text-text-tertiary transition-transform ${
-            open ? "rotate-90" : ""
+          className={`flex h-4 w-4 items-center justify-center text-text-tertiary transition-transform duration-200 ease-smooth ${
+            open ? "rotate-90 text-brand-purple" : ""
           }`}
           aria-hidden
         >
@@ -140,7 +152,7 @@ export function PendingRow({
 
       {/* Expanded detail */}
       {open ? (
-        <div className="border-t border-border-subtle bg-surface-subtle/60 px-4 pb-3 pt-2.5">
+        <div className="animate-fade-in-up border-t border-border-subtle bg-surface-subtle/60 px-5 pb-4 pt-3">
           <div className="grid grid-cols-[1fr_auto] gap-4">
             {/* Left: recap + snippet + meta */}
             <div className="min-w-0 space-y-2.5">

@@ -158,42 +158,46 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Page header — title + tabs + Phase 2 hook (Add action) + Help */}
-      <div className="border-b border-border-subtle bg-white px-5 pt-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-purple text-white">
-              <ClipboardListIcon size={14} />
+      {/* Page header — title · meta · phase-2 ghost · tabs */}
+      <div className="border-b border-border-subtle bg-surface-card px-5 pt-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-purple text-white shadow-xs">
+              <ClipboardListIcon size={17} />
             </span>
-            <h1 className="text-lg font-bold text-text-primary">Action Items</h1>
+            <div>
+              <h1 className="text-[20px] font-semibold leading-tight tracking-tight text-text-primary">
+                Action Items
+              </h1>
+              <p className="mt-0.5 text-[12px] text-text-tertiary">
+                Customer tasks waiting on the team
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {/* Phase 2 hook — Add action manually (BDC agents) */}
-            <button
-              type="button"
-              disabled
-              title="Manual creation lands in Phase 2 — see /docs/prd-grooming"
-              className="inline-flex cursor-not-allowed items-center gap-1 rounded-md border border-border-subtle bg-white px-2.5 py-1 text-[12px] font-medium text-text-tertiary"
-            >
-              + Add action
-              <span className="rounded bg-surface-subtle px-1 py-px text-[9px] font-bold tracking-wide text-text-tertiary">
-                PHASE 2
-              </span>
-            </button>
+            <Phase2GhostButton
+              label="Add action"
+              tooltip="Manual creation by BDC agents — coming in Phase 2"
+              icon="+"
+            />
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts (press ?)"
-              className="flex h-7 w-7 items-center justify-center rounded-md border border-border-subtle bg-white text-[12px] font-mono font-bold text-text-secondary hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-border-subtle bg-surface-card text-[13px] font-mono font-semibold text-text-secondary shadow-xs transition-all duration-150 hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple hover:shadow-sm"
             >
               ?
             </button>
           </div>
         </div>
 
-        {/* Tabs — Pending / Completed (+ disabled Team tab as Phase 2 hook) */}
-        <nav className="mt-3 -mb-px flex items-center gap-0">
+        {/* Tabs — Pending / Completed · Team locked as Phase 2 */}
+        <nav
+          className="mt-4 -mb-px flex items-center gap-0"
+          aria-label="Action item views"
+        >
           <TabLink to="/action-items/pending" active={isPending}>
             <ClockIcon size={13} />
             Pending
@@ -204,15 +208,7 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
             Completed
             <TabBadge active={!isPending}>{completed.length}</TabBadge>
           </TabLink>
-          <span
-            className="flex cursor-not-allowed items-center gap-1.5 border-b-2 border-transparent px-3 pb-2.5 pt-1 text-[13px] font-semibold text-text-tertiary opacity-70"
-            title="Manager dashboard lands in Phase 2"
-          >
-            Team
-            <span className="rounded bg-surface-subtle px-1 py-px text-[9px] font-bold tracking-wide text-text-tertiary">
-              PHASE 2
-            </span>
-          </span>
+          <Phase2Tab label="Team" />
         </nav>
       </div>
 
@@ -283,14 +279,63 @@ function TabLink({
   return (
     <Link
       to={to}
-      className={`flex items-center gap-1.5 border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-semibold transition-colors ${
+      className={`relative flex items-center gap-1.5 px-3 pb-3 pt-1 text-[13px] font-semibold transition-colors duration-150 ${
         active
-          ? "border-brand-purple text-brand-purple"
-          : "border-transparent text-text-tertiary hover:text-text-secondary"
+          ? "text-brand-purple"
+          : "text-text-tertiary hover:text-text-secondary"
       }`}
     >
       {children}
+      <span
+        className={`absolute inset-x-0 bottom-0 h-[2px] rounded-t transition-all duration-200 ${
+          active ? "bg-brand-purple opacity-100" : "bg-brand-purple opacity-0"
+        }`}
+        aria-hidden
+      />
     </Link>
+  );
+}
+
+/**
+ * Elegant Phase 2 affordance — dashed ghost button.
+ * Tooltip carries the "coming soon" copy so the chrome stays clean.
+ */
+function Phase2GhostButton({
+  label,
+  tooltip,
+  icon,
+}: {
+  label: string;
+  tooltip: string;
+  icon: string;
+}) {
+  return (
+    <button
+      type="button"
+      disabled
+      title={tooltip}
+      className="group inline-flex cursor-not-allowed items-center gap-1.5 rounded-md border border-dashed border-border-strong/70 bg-transparent px-2.5 py-1.5 text-[12px] font-medium text-text-tertiary transition-colors duration-150 hover:border-brand-purple/40 hover:text-text-secondary"
+    >
+      <span className="font-mono text-[13px] leading-none">{icon}</span>
+      {label}
+      <span className="ml-0.5 hidden text-[10px] uppercase tracking-wide text-text-tertiary/80 group-hover:text-brand-purple/60 lg:inline">
+        soon
+      </span>
+    </button>
+  );
+}
+
+function Phase2Tab({ label }: { label: string }) {
+  return (
+    <span
+      className="relative flex cursor-not-allowed items-center gap-1.5 px-3 pb-3 pt-1 text-[13px] font-semibold text-text-tertiary opacity-70"
+      title="Manager dashboard — coming in Phase 2"
+    >
+      {label}
+      <span className="rounded-full border border-dashed border-border-strong px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
+        soon
+      </span>
+    </span>
   );
 }
 

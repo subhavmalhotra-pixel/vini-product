@@ -1,21 +1,17 @@
 import type { ActionItem } from "@test-data";
+import type { ComponentType } from "react";
 import { ageMinutes, ageLabel, slaState } from "../data/helpers";
 import type { PendingFilters } from "./FilterStrip";
+import { InboxIcon, ClockIcon, BoltIcon, AlertIcon } from "./Icon";
 
 /**
- * Lite-rollup strip — Phase 1 design contract affordance #9.
+ * Stat-board treatment of the rollup — Phase 1 polish pass.
  *
- * Anya's morning "how is the queue?" — replaces the Excel export.
- * 4 metrics, equal width, each clickable → applies the matching filter.
+ * 4 elevated tiles · subtle shadow-xs · large tabular numbers (22px) ·
+ * iconified header · semantic accent on alarming states.
  *
- * Always visible (single row, ~56 px). Sticky below the page header,
- * above the FilterStrip. Madison sees it too but ignores it.
- *
- * Affordance map (see design-console-action-items.md §3 #9):
- *   1. Total open     · neutral · click → assignment=all
- *   2. Oldest age     · amber/red if > SLA thresholds · click → sort to row
- *   3. Unassigned     · amber soft pill · click → assignment=unassigned
- *   4. Past SLA       · red soft pill · click → age=past_sla
+ * Anya's "how is the queue?" surface — she should see queue health
+ * at a glance without scanning rows.
  */
 export function RollupStrip({
   pending,
@@ -41,7 +37,7 @@ export function RollupStrip({
     ? "neutral"
     : hasPastSlaOldest
     ? "danger"
-    : oldestMins >= 240 // 4h+
+    : oldestMins >= 240
     ? "warning"
     : "neutral";
 
@@ -51,28 +47,36 @@ export function RollupStrip({
   const pastSla = pending.filter((i) => slaState(i) === "past").length;
   const pastSlaTone: Tone = pastSla === 0 ? "neutral" : "danger";
 
+  const allActive =
+    filters.assignment === "all" &&
+    filters.age === "all" &&
+    !filters.repeatCaller &&
+    filters.search.trim().length === 0;
+
   return (
     <div
-      className="flex flex-shrink-0 items-stretch border-b border-border-subtle bg-white"
+      className="grid flex-shrink-0 grid-cols-4 gap-3 border-b border-border-subtle bg-surface-background px-5 py-4"
       role="group"
       aria-label="Queue health summary"
     >
-      <Cell
+      <Tile
+        icon={InboxIcon}
         label="open"
         value={total.toLocaleString()}
         tone="neutral"
         ariaLabel={`${total} open action items, click to view all`}
-        active={filters.assignment === "all" && !hasOtherFilters(filters)}
+        active={allActive}
         onClick={() =>
           onFilterChange({
             ...filters,
             assignment: "all",
             age: "all",
+            repeatCaller: false,
           })
         }
       />
-      <Divider />
-      <Cell
+      <Tile
+        icon={ClockIcon}
         label="oldest"
         value={oldestLabel}
         tone={oldestTone}
@@ -83,21 +87,15 @@ export function RollupStrip({
         }
         disabled={total === 0}
         onClick={() => {
-          // Oldest is the first row by default sort — no filter change needed,
-          // but if a stale filter is active, clear it so the oldest is visible.
-          onFilterChange({
-            ...filters,
-            search: "",
-          });
-          // Scroll the first row into view
+          onFilterChange({ ...filters, search: "" });
           window.requestAnimationFrame(() => {
             const firstRow = document.querySelector("[data-pending-row]");
             firstRow?.scrollIntoView({ behavior: "smooth", block: "start" });
           });
         }}
       />
-      <Divider />
-      <Cell
+      <Tile
+        icon={BoltIcon}
         label="unassigned"
         value={unassigned.toLocaleString()}
         tone={unassignedTone}
@@ -105,26 +103,18 @@ export function RollupStrip({
         active={filters.assignment === "unassigned"}
         disabled={unassigned === 0}
         onClick={() =>
-          onFilterChange({
-            ...filters,
-            assignment: "unassigned",
-          })
+          onFilterChange({ ...filters, assignment: "unassigned" })
         }
       />
-      <Divider />
-      <Cell
+      <Tile
+        icon={AlertIcon}
         label="past SLA"
         value={pastSla.toLocaleString()}
         tone={pastSlaTone}
         ariaLabel={`${pastSla} past SLA, click to filter`}
         active={filters.age === "past_sla"}
         disabled={pastSla === 0}
-        onClick={() =>
-          onFilterChange({
-            ...filters,
-            age: "past_sla",
-          })
-        }
+        onClick={() => onFilterChange({ ...filters, age: "past_sla" })}
       />
     </div>
   );
@@ -132,13 +122,32 @@ export function RollupStrip({
 
 type Tone = "neutral" | "warning" | "danger";
 
-const TONE_VALUE_CLASS: Record<Tone, string> = {
-  neutral: "text-text-primary",
-  warning: "text-status-warning",
-  danger: "text-status-past",
+const TONE: Record<
+  Tone,
+  { value: string; icon: string; chip: string; ring: string }
+> = {
+  neutral: {
+    value: "text-text-primary",
+    icon: "text-text-tertiary bg-surface-subtle",
+    chip: "",
+    ring: "",
+  },
+  warning: {
+    value: "text-status-warning",
+    icon: "text-status-warning bg-status-warning-soft",
+    chip: "bg-status-warning-soft",
+    ring: "",
+  },
+  danger: {
+    value: "text-status-past",
+    icon: "text-status-past bg-status-past-soft",
+    chip: "bg-status-past-soft",
+    ring: "ring-1 ring-status-past/30",
+  },
 };
 
-function Cell({
+function Tile({
+  icon: Icon,
   label,
   value,
   tone,
@@ -147,6 +156,7 @@ function Cell({
   disabled,
   onClick,
 }: {
+  icon: ComponentType<{ size?: number }>;
   label: string;
   value: string;
   tone: Tone;
@@ -155,6 +165,7 @@ function Cell({
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const t = TONE[tone];
   return (
     <button
       type="button"
@@ -162,42 +173,31 @@ function Cell({
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={active ? true : undefined}
-      className={`group flex flex-1 flex-col items-start justify-center gap-0.5 px-4 py-2 text-left transition-colors ${
+      className={`group relative flex h-[88px] flex-col items-start justify-between rounded-xl border bg-surface-card px-4 py-3 text-left shadow-xs transition-all duration-150 ease-smooth ${
         disabled
-          ? "cursor-default opacity-60"
+          ? "cursor-default border-border-subtle opacity-60"
           : active
-          ? "bg-brand-purple-soft/60"
-          : "hover:bg-surface-subtle"
+          ? "border-brand-purple shadow-md ring-1 ring-brand-purple/20"
+          : `border-border-subtle ${t.ring} hover:-translate-y-px hover:border-border-strong hover:shadow-sm`
       }`}
     >
+      {/* Header row — icon + label */}
+      <div className="flex w-full items-center justify-between">
+        <span
+          className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors ${t.icon}`}
+        >
+          <Icon size={13} />
+        </span>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
+          {label}
+        </span>
+      </div>
+      {/* Value — the hero number */}
       <span
-        className={`tabular text-[15px] font-semibold leading-tight ${TONE_VALUE_CLASS[tone]}`}
+        className={`tabular text-[22px] font-semibold leading-none tracking-tight ${t.value}`}
       >
         {value}
       </span>
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-        {label}
-      </span>
     </button>
-  );
-}
-
-function Divider() {
-  return (
-    <span
-      className="my-2 w-px self-stretch bg-border-subtle"
-      aria-hidden="true"
-    />
-  );
-}
-
-function hasOtherFilters(f: PendingFilters): boolean {
-  return (
-    f.intentIds.length > 0 ||
-    f.channels.length > 0 ||
-    f.age !== "all" ||
-    f.dept !== "all" ||
-    f.search.trim().length > 0 ||
-    Boolean(f.repeatCaller)
   );
 }

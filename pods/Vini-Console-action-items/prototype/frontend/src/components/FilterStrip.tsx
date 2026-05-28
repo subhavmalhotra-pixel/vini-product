@@ -69,18 +69,18 @@ export function FilterStrip({
     (filters.repeatCaller ? 1 : 0);
 
   return (
-    <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle bg-white px-4 py-2">
+    <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-border-subtle bg-surface-card px-5 py-2.5">
       {/* Search */}
-      <div className="relative w-[240px]">
+      <div className="relative w-[260px]">
         <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary">
-          <SearchIcon size={13} />
+          <SearchIcon size={14} />
         </span>
         <input
           type="text"
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           placeholder="Search customer, recap…"
-          className="w-full rounded-md border border-border-subtle bg-white py-1 pl-7 pr-7 text-[12px] placeholder:text-text-tertiary focus:border-brand-purple focus:outline-none"
+          className="w-full rounded-md border border-border-subtle bg-surface-card py-1.5 pl-8 pr-7 text-[12px] shadow-xs transition-colors duration-150 placeholder:text-text-tertiary focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20"
         />
         {filters.search ? (
           <button
@@ -93,16 +93,18 @@ export function FilterStrip({
         ) : null}
       </div>
 
-      {/* Assignment */}
-      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle">
+      <FilterDivider />
+
+      {/* Assignment — segmented control */}
+      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle shadow-xs">
         {ASSIGNMENT_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             onClick={() => onChange({ ...filters, assignment: opt.value })}
-            className={`px-2.5 py-1 text-[11px] font-semibold ${
+            className={`px-3 py-1.5 text-[11px] font-semibold transition-colors duration-150 ${
               filters.assignment === opt.value
                 ? "bg-brand-purple-soft text-brand-purple"
-                : "bg-white text-text-secondary hover:bg-surface-subtle"
+                : "bg-surface-card text-text-secondary hover:bg-surface-subtle"
             }`}
           >
             {opt.label}
@@ -110,11 +112,13 @@ export function FilterStrip({
         ))}
       </div>
 
+      <FilterDivider />
+
       {/* Age */}
       <select
         value={filters.age}
         onChange={(e) => onChange({ ...filters, age: e.target.value as AgeFilter })}
-        className="rounded-md border border-border-subtle bg-white px-2 py-1 text-[11px] font-medium text-text-secondary focus:border-brand-purple focus:outline-none"
+        className="rounded-md border border-border-subtle bg-surface-card px-2.5 py-1.5 text-[11px] font-medium text-text-secondary shadow-xs transition-colors duration-150 focus:border-brand-purple focus:outline-none"
       >
         {AGE_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -124,7 +128,7 @@ export function FilterStrip({
       </select>
 
       {/* Channel icons — compact toggle row */}
-      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle">
+      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle shadow-xs">
         {CHANNELS.map((c) => {
           const active = filters.channels.includes(c);
           return (
@@ -132,10 +136,10 @@ export function FilterStrip({
               key={c}
               onClick={() => toggleChannel(c)}
               title={c.replace("_", " ")}
-              className={`flex h-7 w-7 items-center justify-center ${
+              className={`flex h-7 w-7 items-center justify-center transition-colors duration-150 ${
                 active
                   ? "bg-brand-purple-soft text-brand-purple"
-                  : "bg-white text-text-tertiary hover:bg-surface-subtle"
+                  : "bg-surface-card text-text-tertiary hover:bg-surface-subtle"
               }`}
             >
               <ChannelGlyph channel={c} size={13} />
@@ -148,10 +152,10 @@ export function FilterStrip({
       <div className="relative">
         <button
           onClick={() => setIntentsOpen((o) => !o)}
-          className={`flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${
+          className={`flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold shadow-xs transition-colors duration-150 ${
             filters.intentIds.length > 0
               ? "border-brand-purple bg-brand-purple-soft text-brand-purple"
-              : "border-border-subtle bg-white text-text-secondary hover:bg-surface-subtle"
+              : "border-border-subtle bg-surface-card text-text-secondary hover:bg-surface-subtle"
           }`}
         >
           <FilterIcon size={12} /> Intent
@@ -197,25 +201,27 @@ export function FilterStrip({
         title="Show only customers who pinged us 3+ times"
         aria-label="Filter to repeat callers"
         aria-pressed={filters.repeatCaller}
-        className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${
+        className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold shadow-xs transition-colors duration-150 ${
           filters.repeatCaller
             ? "border-status-warning bg-status-warning-soft text-status-warning"
-            : "border-border-subtle bg-white text-text-secondary hover:bg-surface-subtle"
+            : "border-border-subtle bg-surface-card text-text-secondary hover:bg-surface-subtle"
         }`}
       >
         <RepeatIcon size={12} /> Repeat
       </button>
 
-      {/* Dept toggle right side */}
-      <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border-subtle">
+      <FilterDivider />
+
+      {/* Dept toggle */}
+      <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border-subtle shadow-xs">
         {(["all", "sales", "service"] as const).map((d) => (
           <button
             key={d}
             onClick={() => onChange({ ...filters, dept: d })}
-            className={`px-2.5 py-1 text-[11px] font-semibold capitalize ${
+            className={`px-3 py-1.5 text-[11px] font-semibold capitalize transition-colors duration-150 ${
               filters.dept === d
                 ? "bg-brand-purple-soft text-brand-purple"
-                : "bg-white text-text-secondary hover:bg-surface-subtle"
+                : "bg-surface-card text-text-secondary hover:bg-surface-subtle"
             }`}
           >
             {d}
@@ -236,11 +242,20 @@ export function FilterStrip({
               repeatCaller: false,
             })
           }
-          className="text-[11px] font-medium text-brand-purple hover:underline"
+          className="ml-1 text-[11px] font-medium text-brand-purple transition-colors duration-150 hover:underline"
         >
           Clear {activeCount}
         </button>
       ) : null}
     </div>
+  );
+}
+
+function FilterDivider() {
+  return (
+    <span
+      className="h-5 w-px self-center bg-border-subtle"
+      aria-hidden
+    />
   );
 }

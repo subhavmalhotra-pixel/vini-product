@@ -7,8 +7,11 @@
     height: 100%;
   }
   body {
-    @apply bg-surface-background text-text-primary text-sm;
+    @apply bg-surface-background text-text-primary text-sm antialiased;
     font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* Tabular numerals for tabular data (counts, times, IDs) */
@@ -18,7 +21,8 @@
 
   /* Subtle focus styling — preserve focus visibility for keyboard nav (a11y) */
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-purple ring-offset-1;
+    @apply outline-none ring-2 ring-brand-purple ring-offset-2;
+    ring-offset-color: white;
   }
 
   /* Respect prefers-reduced-motion globally */
