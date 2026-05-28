@@ -4,38 +4,67 @@
 **Product:** Vini
 **Pod / Team:** Vini Product Team
 **Date:** 19 May 2026
-**Status:** Draft v2 — pending BDC-rep verbatim verification + product-analytics instrumentation
+**Status:** Draft v3 — restructured around the 3-stage lifecycle (Create / Manage / Communicate) · pending BDC-rep verbatim for new pillars + product-analytics instrumentation
 
 ---
 
 ## 1. What's the problem?
 
-Vini is the AI BDC agent across calls, SMS, webchat and email. Every conversation generates customer intents that Vini either resolves end-to-end or needs to hand off as a Human-In-The-Loop (HITL) task. The console must turn those unresolved intents into **assigned, trackable, closeable tasks at the customer level** — assigned either to a human (BDC rep, advisor, manager) or back to Vini itself with an auditable resolution note.
+Vini is the AI BDC agent across calls, SMS, webchat and email. Every conversation generates customer intents Vini either resolves end-to-end or hands off as a Human-In-The-Loop (HITL) task. **The Action Items section must be a complete task-tracker system** — not a passive list — that handles the full lifecycle of every customer task across **three stages**:
 
-Today's Action Items section breaks on every dimension of that job: tasks are listed per-action (not per-customer), there's no creation timestamp, no assignee field, no link to the source call, no resolution note when closed, and access is gated to 1–2 people per rooftop instead of the team that actually closes the work. The result: dealers run their BDC from forwarded emails and Slack DMs, not from the product surface built for it.
+```
+                   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   conversation →  │  1. CREATE   │ → │  2. MANAGE   │ → │ 3. COMMUNICATE│ → customer + CRM
+                   │              │   │              │   │              │
+                   │  Vini · BDC  │   │  Closer +    │   │  Customer +  │
+                   │  manual add  │   │  Manager     │   │  CRM sync    │
+                   └──────────────┘   └──────────────┘   └──────────────┘
+```
 
-**The four problems, in customer language:**
+Today's section breaks at every stage. Tasks created by Vini lack context to act on. Manager visibility is per-row only, no aggregate. Closure is invisible to the customer; the CRM drifts; reps switch tools to send updates. **The result: dealers run their BDC from forwarded emails and Slack DMs, not from the product surface built for it.**
+
+**The three problems, in customer language:**
+
+### Pillar 1 — Creation: tasks lack context, and reps can't add tasks of their own.
 
 1. **"I can't read the action queue without re-listening to every conversation."**
-   GMs and BDC Managers see action types and counts, but no creation time, no caller phone number, no one-sentence intent recap, and no way to click through to the source conversation. Acting on the queue means opening every transcript — which is why the queue isn't used in the morning standup.
+   GMs and BDC Managers see action types and counts, but no creation time, no caller phone number, no one-sentence intent recap, and no way to click through to the source conversation. Acting on the queue means opening every transcript.
 
-2. **"I can't tell who owns what or whether anything was actually closed."**
-   There's no assignee field. The "Completed" tab marks items closed but doesn't say who closed them, when, or what they did. Repeat-callers (the same customer pinging 5 times across 3 days about the same issue) don't get flagged because nothing links the action items back to a single customer.
+2. **"My reps see things on calls that should become tasks, but they can't add them. They Slack me instead."** *(NEW pillar — pending BDC-rep verbatim)*
+   Vini creates tasks from intents it detects, but a BDC agent watching a complex conversation may spot a follow-up Vini missed — or want to add a task that has no conversation yet (a callback the rep promised at the front desk, a follow-up note from a walk-in). Today there's no way to create an action item manually; reps default to Slack DMs to managers, which fall through the cracks.
 
-3. **"I'm the BDC rep who closes these — but I don't even have access to the queue."**
-   Today only the GM and Service Manager see the action items at most rooftops. The reps who are the first line of customer follow-up either receive Slack-forwarded items from their manager or learn about issues reactively when the customer re-calls. Reps want their own filtered view ("my tasks, sorted by how long the customer has been waiting").
+3. **"Multiple intents from one conversation get scattered."** *(partially addressed in Phase 1 multi-intent · re-stated here for context)*
+   A customer asks about pricing + recall + a callback in one SMS. Today these may collapse into a single "general inquiry" task. The new bulk-close drawer handles closing them together, but the creation pipeline still needs to faithfully detect all three.
 
-4. **"I want Vini to close some of these for me — with a resolution note I can audit."**
-   For low-judgment tasks (sending a status update, confirming a recall, sharing parts availability), dealerships want to assign the action item back to Vini and trust it to close + log a resolution note. This is the AI-native dimension competitors can't ship: routing back to the agent that originated the task.
+### Pillar 2 — Management: no manager-level rollup, no role-default access, accountability lives in screenshots.
+
+4. **"I can't tell who owns what or whether anything was actually closed."**
+   No assignee field. The "Completed" tab marks items closed but doesn't say who closed them, when, or what they did. Repeat-callers (the same customer pinging 5 times across 3 days about the same issue) don't get flagged because nothing links the action items back to a single customer.
+
+5. **"I'm the BDC rep who closes these — but I don't even have access to the queue."**
+   Today only the GM and Service Manager see the action items at most rooftops. Reps either receive Slack-forwarded items from their manager or learn about issues reactively when the customer re-calls. Reps want their own filtered view ("my tasks, sorted by how long the customer has been waiting").
+
+6. **"I'm the BDC Manager — show me the queue health, not just individual tasks."** *(NEW — pending BDC-Manager verbatim)*
+   A Manager opening the queue sees the same per-row view as a BDC rep. No aggregate SLA-by-intent panel, no unassigned-volume widget, no "who on my team has 8+ open items today." Manager-level rollup doesn't exist; managers re-create it in Excel.
+
+### Pillar 3 — Communication: closure is invisible to the customer; the CRM drifts.
+
+7. **"I want Vini to close some of these for me — with a resolution note I can audit."**
+   For low-judgment tasks (sending a status update, confirming a recall, sharing parts availability), dealerships want to assign the action item back to Vini and trust it to close + log a resolution note. This is the AI-native dimension competitors can't ship: routing back to the agent that originated the task — *and* having that agent communicate the closure back to the customer.
+
+8. **"My customer doesn't know I closed their task — they have to call again to find out."** *(NEW — pending customer-side voice)*
+   When a BDC rep closes "send pricing quote" in the console, no automated message goes back to the customer. The rep has to switch to the inbox tab, compose a separate email/SMS, and remember to mention the quote. Customers ping again 4 hours later asking if anyone got back to them — because nobody did.
+
+9. **"The CRM is 12 hours behind. Reps update the queue; the CRM doesn't know."** *(NEW — references existing 12-hour pull baseline)*
+   We already pull dealer-CRM data into Vini every 12 hours, but the reverse direction (closure status → CRM) is manual. A rep closing an action item in the Vini console doesn't push that resolution back to the dealer's CRM. The dealer maintains two sources of truth and reconciles by hand.
 
 **Who feels each pillar most acutely:**
 
 | Pillar | Most affected dealership roles | Why |
 |---|---|---|
-| 1. Queue is unreadable without re-listening | GM, BDC Manager, Service Manager | Monday standup is supposed to start with "what does the queue look like" — today it can't |
-| 2. No accountability trail | GM, Dealer Principal, BDC Manager | Cannot grade rep performance or detect dropped follow-ups; renewal defense becomes "we hope it worked" |
-| 3. Closers don't have access | BDC Agent, Service Advisor, Sales Advisor | The actual day-to-day user is locked out; issues escalate via reactive re-calls instead of proactive resolution |
-| 4. Vini-as-assignee missing | GM, BDC Manager, Fixed Ops Director | Every action item routes to a human even when Vini could close it — unit economics worsen as volume scales |
+| **1. Creation gap** — context missing + no manual-add | GM · BDC Manager · BDC Agent · Service Manager | Monday standup can't start with "what does the queue look like" — and reps can't add the things they observe |
+| **2. Management gap** — no rollup, no role-default views | BDC Manager · GM · Dealer Principal · Fixed Ops Director | Managers can't grade reps or defend SLA performance at QBRs — renewal defense becomes "we hope it worked" |
+| **3. Communication gap** — closure invisible to customer + CRM | BDC Agent · Customer · Dealer Principal | Customer pings again because closure was invisible · CRM drifts because nothing pushes back · dealer maintains two sources of truth |
 
 ---
 

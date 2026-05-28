@@ -4,12 +4,24 @@
 **Product:** Vini
 **Pod:** Vini Product Team
 **Date:** 20 May 2026
-**Status:** draft v2.1 — full detailed scope · Phase-2 work streams fully expanded · Section 10 signed off cross-pod 19 May 2026
+**Status:** draft v3.0 — restructured as a **3-stage task-tracker system** (Create / Manage / Communicate) · Section 10 signed off cross-pod 19 May 2026 · 3 new lifecycle events
 
 > A condensed **grooming snippet** of this PRD is maintained separately at `prd-console-action-items-grooming.md` (route `/docs/prd-grooming`). The full detailed scope, prescriptive specs, and event schema live in this document.
 
 ---
 
+> **What changed v2.1 → v3.0 (22 May 2026):**
+> - **The Action Items section is now framed as a complete task-tracker system, not a queue.** Three lifecycle stages: **Create → Manage → Communicate**. Every Section in the PRD is re-clustered around these stages — Section 1 JTBD, Section 3 non-goals, Section 8 phases, Section 9 UI specs, Section 10 events all reorganised.
+> - **3 new capabilities introduced** (in addition to everything from v2.1):
+>   - **Manual creation by BDC** (Create-Phase-2) — rep can add an action item to a customer · tagged to a conversation · upgraded from a note. Resolves a gap where reps Slack their managers instead of creating items.
+>   - **Manager dashboard** (Manage-Phase-2) — aggregate SLA panel · unassigned-volume widget · per-rep workload · access-management. Today the Manager sees the same per-row view as a BDC Agent; v3.0 splits the surface.
+>   - **Communication pillar** (Communicate-Phase-2) — compose-in-drawer (no tool-switch) · automated customer status updates (co-branded or dealer-branded · template-configurable) · CRM sync on closure (manual-trigger push initially, bi-directional aspirational). Pulled forward from Phase 3.
+> - **Section 8 restructured.** 8.1 split into 8.1.A Create / 8.1.B Manage / 8.1.C Communicate. 8.2 split into 8.2.A / 8.2.B / 8.2.C with the 8 v2.1 work streams re-clustered + 3 new streams (manual creation · manager dashboard · CRM sync).
+> - **Section 9 restructured.** 12 numbered UI subsections regrouped into 3 surface families (Create surfaces · Manage surfaces · Communicate surfaces) with the new manual-creation modal, manager dashboard, and compose-in-drawer specs added.
+> - **Section 10.2 gains 3 new events:** `action_item.created_manually` · `action_item.customer_notified` · `action_item.crm_synced`.
+> - **CRM scope decision baked in.** Phase 2 ships manual-trigger CLOSURE-PUSH ("Sync to CRM" in the Close drawer). Existing 12-hour pull stays as the baseline read-path. Bi-directional sub-12-hour push is the Phase 3 target.
+> - **Customer-comms branding decision baked in.** Phase 2 ships co-branded by default ("From [Dealer], powered by Vini") with dealer-brand template configurability (signature + logo + optional dealer-branded sender domain).
+>
 > **What changed v2.0 → v2.1 (22 May 2026):**
 > - **Grooming framing extracted.** The grooming-friendly TL;DR table, phase-badge legend, and the simplified "what changed" callouts now live in the separate grooming-snippet PRD. This main PRD is the full, prescriptive spec.
 > - All v2.0 detail content **retained**: 18-row Section 3 non-goals table, 8-stream Section 8.2 Phase 2 work-stream expansion, Section 9.0 phase-coverage prelude, Section 10.2.1 Phase 2 event-fields note, Kill #8 (queue pile-up).
@@ -43,14 +55,36 @@
 
 ## 1. Job to be done
 
-As a dealership stakeholder, I want the Vini Console's Action Items section to act as the single, accountable surface where every unresolved customer intent — across calls, SMS, chat, email, and human-in-the-loop conversations — lands at the customer level with an owner, an age, a source-call link, and a resolution note when closed — so my BDC team can run from one queue instead of forwarded Slack messages, no customer slips through the cracks, and I can defend "Vini freed up BDC headcount" at renewal *(Signal Section 1 pillars 1–4, Section 3 Edgar quotes 1–7, Section 3 quote 10 on Vini-as-assignee, Section 6 end-to-end choreography of the current workaround)*.
+As a dealership stakeholder, I want the Vini Console's Action Items section to act as a **complete task-tracker system** — handling the full lifecycle of every customer task from creation through management through customer-facing communication — so my BDC team can run from one surface (no forwarded Slack messages), my managers see queue health at a glance (not just per-row), and my customers stay informed without my reps switching tabs *(Signal Section 1 — three pillars: Creation gap, Management gap, Communication gap)*.
 
-This pod's Job to be done **expands** as we move from Phase 1 to Phase 2:
+### The 3-stage lifecycle
 
-- **Phase 1 (this PRD).** Make the queue **readable and accountable for a single rooftop**. Customer-level rollup · click-to-listen · timestamps · assignee + completion record · resolution note · channel-aware creation (including HITL) · multi-intent bulk close · per-intent SLA matrix + escalation flag *render*. Full scope catalogued in Section 8.1; deferred items detailed in Section 3.1.
-- **Phase 2 (future PRD, scoped here in Section 8.2 so the data model and config layer don't drift).** The full configurable & accountable queue. Eight named work streams: routing config · Vini-as-assignee · multi-rooftop · employee directory + onboarding · escalation routing & nudge cascade · auto-assignment fallbacks · role-based view filters · customer history + re-open UX. Each stream resolves a specific Section 3 deferral and has its own goal + ships list in Section 8.2.
+```
+                   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+   conversation →  │  1. CREATE   │ → │  2. MANAGE   │ → │ 3. COMMUNICATE│ → customer + CRM
+                   │              │   │              │   │              │
+                   │  Vini detects│   │  Closer +    │   │  Customer    │
+                   │  + BDC adds  │   │  Manager     │   │  + CRM sync  │
+                   └──────────────┘   └──────────────┘   └──────────────┘
+```
 
-**Cross-pod note:** Phase 2 of this pod **shares scope with the ROI Emailer pod's self-serve subscription platform** (`prd-roi-emailer.md` Section 10). Both converge on a single "who at the dealership gets what" configuration layer — full reasoning in Section 8.2 and Section 10.6.
+| Stage | Question it answers | Owner |
+|---|---|---|
+| **1. Create** | *"Where do tasks come from and with what context?"* | Vini (automatic) + BDC Agent (manual) |
+| **2. Manage** | *"Who closes which task, when, and how do managers see queue health?"* | BDC Agent (closer) + BDC Manager (rollup view) |
+| **3. Communicate** | *"How does the customer know we acted? How does the dealer's CRM stay in sync?"* | Vini + BDC Agent + dealer CRM |
+
+### Phase split
+
+Phase 1 ships the foundation of all three stages. Phase 2 ships the **configurable & accountable** layers across all three.
+
+| Stage | ✅ Phase 1 *(this PRD)* | 🚀 Phase 2 *(future PRD — see Section 8.2)* |
+|---|---|---|
+| **1. Create** | Vini-driven AI extraction across all 5 channels · multi-intent dedup · per-intent SLA inheritance · 14-intent taxonomy | + **Manual creation** (BDC adds to a customer · tags a conversation · upgrades a note) · auto-route at birth via routing config |
+| **2. Manage** | Pending + Completed views · assign + close · SLA flag *render* · resolution note + type · customer profile drill-in · multi-intent bulk close | + **Manager dashboard** (aggregate SLA · unassigned panel · access management) · routing config · employee directory · escalation routing · auto-assignment · per-role default views · customer history |
+| **3. Communicate** | Deep-link to existing Vini inbox · cross-pod email-loop badge (read-only) · resolution note as internal audit trail | + **Compose-in-drawer** (close + send in one motion) · **Automated customer status updates** (co-branded or dealer-branded · template-configurable) · **CRM sync on closure** (manual-trigger push · existing 12-hour pull stays as baseline) |
+
+**Cross-pod note:** Phase 2 of this pod **shares scope with the ROI Emailer pod's self-serve subscription platform** (`prd-roi-emailer.md` Section 10). Both converge on a single "who at the dealership gets what" configuration layer — full reasoning in Section 8.2.A and Section 10.6.
 
 ---
 
@@ -131,12 +165,16 @@ Phase 1 is the **readable, accountable single-rooftop queue**. Everything else i
 | 10 | **Customer history & "Reopened" UX** *(NEW v2.0)* | Phase 1 dedups on `(customer_id, intent_id)` while `status = pending`. A closed item that the customer calls about again creates a NEW item with no UX hint about prior closures. | 🚀 **Phase 2** Section 8.2.8 | New chip + tooltip on the row showing "N prior closes" with the timeline. Also covers the reopened-item visual treatment. |
 | 11 | **In-console messaging** | Reps can't reply to the customer from the action-item card. We deep-link to the existing Vini inbox; we don't embed. | ❌ **Other pod** | Lives with the existing console inbox. Not this pod's job. |
 | 12 | **Custom action-item / intent types** | Phase 1 ships the fixed 14-intent taxonomy (Section 10.5). No dealer-defined custom intents. | 🔮 **Phase 3** | Requires versioned taxonomy migration tooling — too costly to ship before Phase 2 evidence. |
-| 13 | **CRM write-back** | Closure status, resolution notes, assignee data don't push back into Reynolds / CDK / DealerSocket. Audit trail lives in Vini. | 🔮 **Phase 3** | Per-CRM integrations are expensive; we need Phase 2 traction before investing. |
+| 13 | **CRM push on closure** *(reclassified v3.0)* | Closure status, resolution notes, assignee data don't push back into Reynolds / CDK / DealerSocket. Existing 12-hour pull stays as the baseline read path. | 🚀 **Phase 2** Section 8.2.C.3 | Reclassified from Phase 3 → Phase 2 in v3.0 per dealer feedback. Manual-trigger push on close + auto-push from Vini-as-assignee. Bi-directional sub-12-hour pull stays Phase 3. |
 | 14 | **Real-time push notifications** | No SMS / Slack / mobile push when a new action item is created. The ROI Emailer pod's Daily Digest is the cadence surface. | 🚀 **Phase 2** Section 8.2.5 | Slack DM ships as part of the escalation nudge cascade. Mobile push is 🔮 Phase 3+. |
 | 15 | **Native mobile app** | Mobile-responsive web is acceptable for Phase 1. Native iOS/Android is deferred. | 🔮 **Phase 3+** | — |
 | 16 | **Action-item creation from non-Vini sources** | No ingestion from Service Lane apps, walk-in tablets, web-form submissions. Vini conversations only. | 🔮 **Phase 3** | Requires generalising the AI pipeline beyond the conversation transcript shape. |
 | 17 | **Cross-customer bulk operations** | No cross-customer bulk-assign or bulk-close. Queue is intentionally small (Section 9.2 design promise). | 🚀 **Phase 2** Section 8.2.6 | **Exception:** customer-level multi-intent bulk-close IS in Phase 1 (Section 9.7). Completed-view multi-select for re-open + CSV export are audit affordances, not "bulk-assign". |
-| 18 | **Action-item auto-close at SLA × 3** *(NEW v2.0)* | If nobody closes an item, does the system ever auto-close it with `customer_unreachable` so the queue doesn't grow forever? | 🚀 **Phase 2** Section 8.2.5 | Open question — see Section 8.2.5 open decisions. Recommendation: yes at 3× SLA with system-generated note. |
+| 18 | **Action-item auto-close at SLA × 3** *(NEW v2.0)* | If nobody closes an item, does the system ever auto-close it with `customer_unreachable` so the queue doesn't grow forever? | 🚀 **Phase 2** Section 8.2.B.4 | Open question — see 8.2.B.4 open decisions. Recommendation: yes at 3× SLA with system-generated note. |
+| 19 | **Manual creation by BDC** *(NEW v3.0)* | Reps can't add an action item themselves — only Vini extraction creates items. Reps Slack their manager when they spot follow-ups Vini missed. | 🚀 **Phase 2** Section 8.2.A.2 | Three sub-surfaces: customer-level add · conversation-tagged · note-upgraded. Same routing + SLA inheritance as AI-created items. |
+| 20 | **BDC Manager dashboard** *(NEW v3.0)* | Manager sees the same per-row queue as a BDC Agent. No aggregate SLA panel, no unassigned-volume widget, no per-rep workload view. Managers recreate rollups in Excel. | 🚀 **Phase 2** Section 8.2.B.1 | New top-level surface sibling to Pending/Completed. Includes access-management. |
+| 21 | **Compose-in-drawer (close + send in one motion)** *(NEW v3.0)* | Reps close an item in the Console, then switch to the inbox to send the customer a message. Two-step workflow; tab-switch is friction. | 🚀 **Phase 2** Section 8.2.C.1 | Narrower than the original #11 "in-console messaging" non-goal — compose-in-drawer is closure-message only, not full inbox. Existing inbox surface still owns multi-turn outbound. |
+| 22 | **Automated customer status updates** *(NEW v3.0)* | When a BDC closes a task, the customer gets no automated message. They call back hours later asking if anyone replied. | 🚀 **Phase 2** Section 8.2.C.2 | Co-branded by default · dealer-branded with template config. Frequency cap + DNC/TCPA-safe. Triggered on `action_item.closed` for opted-in dealer + intent class. |
 
 ### 3.2 What Phase 1 DOES handle (clarifications)
 
@@ -394,36 +432,58 @@ If any of the three fails, see Section 7 kill criteria before authorizing the Ph
 
 This PRD scopes **Phase 1** only. Phase 2 is mapped here so the data model and config layer don't drift between this pod and the ROI Emailer pod.
 
-### Phase 1 — Console Queue UX *(this PRD)*
+### 8.1 Phase 1 — Foundation across all 3 lifecycle stages *(this PRD)*
 
-**Goal:** Every Vini-deployed rooftop has a readable, accountable action queue where every closer can do their job from one screen.
+**Top-level goal:** Every Vini-deployed rooftop has a readable, accountable action queue where each lifecycle stage has a working foundation — Vini creates tasks correctly, humans manage + close them with an audit trail, and the closure is at least *visible* in cross-pod surfaces (Daily Digest badge).
 
-**Ships:**
-- Customer-level rollup with the 5-collection profile (Details + Action items live in Phase 1; Vehicles / Conversations / Appointments are read-only references from existing console surfaces)
-- Pending view + Completed view as separate IA surfaces (Signal Section 9.2)
-- Click-to-listen on the source conversation from any action-item card
-- Creation timestamp + customer-wait age + intent recap (AI-generated, deterministic fallback) on every item
+#### 8.1.A Phase 1 · Create
+
+- AI extraction pipeline (Section 4) — Haiku 4.5 per-conversation · intent classification + recap + multi-intent
+- Channel-aware triggers (Section 4.3) — call/chat/sms/email/HITL
+- Deterministic dedup on `(customer_id, intent_id)` while status = pending (Section 4.4)
+- Per-intent SLA inheritance at creation (Section 2 SLA matrix)
+- Fallback path that never blocks creation on AI failure (Section 4.5)
+- Cost ceiling (Section 4.6) auto-disables AI generation at $0.05/req 24h-rolling
+
+#### 8.1.B Phase 1 · Manage
+
+- Customer-level rollup with the 5-collection profile (Section 9.4)
+- Pending view + Completed view as separate IA surfaces (Section 9.2 / 9.3)
+- Click-to-listen on source conversation from any action-item card
 - Assignee field + completion record (who closed, when, resolution note)
-- Channel-aware creation logic across call / chat / SMS / email / HITL (Signal Section 9.3)
-- Repeat-caller escalation flag at the customer level (Signal Section 9.1 implication)
+- Repeat-caller flag *(render-only — routing in Phase 2)*
+- SLA flag *(render-only — escalation comms in Phase 2)*
+- Customer-level multi-intent bulk close (Section 9.7)
 - Product-analytics instrumentation against Section 10 event schema
-- Fixed action-item type catalog (Section 3 non-goal #4 lists 10 types)
 
-**Out of Phase 1:** see Section 3 non-goals (all 10).
+#### 8.1.C Phase 1 · Communicate
 
-**Success exit criteria for Phase 1:** Section 2 primary metric hits ≥ 60% closure-within-SLA at 30 days post-launch across at least 50% of live rooftops. If miss, see Section 7 kill criteria #2 before investing in Phase 2.
+- Deep-link to the existing Vini inbox from any action-item drawer (does NOT embed compose)
+- Cross-pod email-loop badge (Section 9.10) — "Surfaced in your Daily Digest May 17" *(inbound from ROI Emailer pod)*
+- Resolution note as the internal audit trail (Section 9.6) — never surfaced to customer or CRM in Phase 1
+- Existing 12-hour CRM pull *(unchanged from today's baseline — not new in Phase 1, but cited so Phase 2 work doesn't re-build it)*
 
-### 8.2 Phase 2 — The configurable & accountable queue *(future PRD)*
+**Out of Phase 1:** see Section 3.1 non-goals — most explicit deferrals map to Phase 2 (Section 8.2). Notably absent in Phase 1: manual creation by BDC · Manager dashboard · compose-in-drawer · automated customer status updates · CRM push on closure.
 
-**Top-level goal:** Dealers configure who closes what; Vini auto-closes the routine items; nothing sits past SLA without escalation; multi-rooftop groups roll up cleanly.
+**Success exit criteria for Phase 1:** Section 2 primary metric hits ≥ 60% intent-weighted closure-within-SLA at 30 days post-instrumentation across at least 50% of live rooftops. If miss, see Section 7 kill criteria #2 before investing in Phase 2.
 
-Phase 2 ships as **8 named work streams**. Each stream resolves a specific row from Section 3.1 — links shown inline. The streams are independently scoped but ship together (or close-to-together) because they share the same routing/recipient config layer.
+### 8.2 Phase 2 — The configurable, accountable, customer-aware system *(future PRD)*
+
+**Top-level goal:** The Action Items section becomes a true task-tracker system across all 3 lifecycle stages — reps can create tasks manually, managers see queue health at a glance, customers are kept in the loop without rep tab-switching, and the dealer's CRM stays in sync.
+
+Phase 2 ships as **11 named work streams** clustered by the 3 lifecycle stages it deepens (8 carried over from v2.1 + 3 new). Each stream resolves a specific row from Section 3.1 — links shown inline. The 3 buckets ship in sequence: **A (Create) → B (Manage) → C (Communicate)** so each downstream stage has the upstream context it needs.
 
 **Phase 2 shares scope with the ROI Emailer pod's self-serve subscription platform** (`prd-roi-emailer.md` Section 10). Both phases converge on the same "who at the dealership gets what" config layer. Recommendation: a single Phase 2 PRD covers both routing models — one recipient, one config UI — to avoid bifurcating the dealer-facing settings surface.
 
 ---
 
-#### 8.2.1 Routing & recipient configuration · *resolves Section 3.1 #2*
+### 8.2.A Phase 2 · Create
+
+Bucket goal: tasks born with full context, full routing, full SLA — whether Vini creates them or a BDC rep does.
+
+---
+
+#### 8.2.A.1 Routing & recipient configuration · *resolves Section 3.1 #2*
 
 **Goal:** Per-role action-item routing rules — BDC Manager assigns `pricing_quote` items to the sales-desk team by default; `recall_response` items route to a specific advisor; `compliance_alert` items route to the Compliance Officer.
 
@@ -437,7 +497,20 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.2 Vini-as-assignee with auto-resolution · *resolves Section 3.1 #3*
+#### 8.2.A.2 Manual creation by BDC · *NEW (v3.0) — resolves Section 3.1 #19 (new gap)*
+
+**Goal:** Reps can add an action item themselves, not only via Vini intent detection. Three sub-surfaces, all wired to the same routing + SLA inheritance as Vini-created items.
+
+**Ships:**
+- **Add action item · customer-level** — From any customer profile, an "Add action item" CTA opens a modal: intent picker (14 fixed types from Section 10.5) · short title · optional vehicle reference · optional assignee · optional due-date override. SLA defaults to the per-intent SLA matrix; rep can override down (more urgent) but not up.
+- **Add action item · conversation-tagged** — Inside the Conversations tab (Section 9.4), each conversation row gets a "+ Tag action item" affordance. Opens the same modal pre-populated with `source_conversation_id` so it's linked.
+- **Add action item · note-upgraded** — When a rep writes a free-form note on a customer profile and chooses "Convert to action item," the note text seeds `intent_recap` and the AI suggests a matching intent (rep confirms or overrides).
+- New event `action_item.created_manually` (Section 10.2) carrying `created_by_user_id` + `creation_source` ∈ `{customer_level, conversation_tagged, note_upgraded}`.
+- Audit guarantee: manual items render with a small `+manual` chip in the Pending row so managers can tell the source apart from AI-created.
+
+**Why this stream exists:** Today reps Slack their manager when they spot follow-ups Vini missed. Phase 2 closes that hole — every observed follow-up lands in the queue with full context.
+
+#### 8.2.A.3 Vini-as-assignee with auto-resolution · *resolves Section 3.1 #3*
 
 **Goal:** Low-judgment tasks (status updates · parts availability · recall eligibility post Recall Masters integration · simple FAQ answers) can be routed back to Vini. Vini executes + drafts a resolution note + closes. GM audits.
 
@@ -450,7 +523,27 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.3 Multi-rooftop / group-level rollups · *resolves Section 3.1 #1*
+---
+
+### 8.2.B Phase 2 · Manage
+
+Bucket goal: closers see their work, managers see queue health, escalations route automatically, nobody re-creates the queue in Excel.
+
+#### 8.2.B.1 Manager dashboard · *NEW (v3.0) — resolves Section 3.1 #20 (new gap)*
+
+**Goal:** BDC Managers get a separate landing surface (sibling to Pending/Completed) that rolls queue state up to actionable aggregates — not just per-row badges.
+
+**Ships:**
+- **Aggregate SLA panel** — `% of items past SLA today` · `% within 0.75× SLA (approaching)` · `% on time` · broken out per-intent so a manager spots which intent class is dragging
+- **Unassigned volume widget** — `N items unassigned` · `K of those past SLA` · one-click filter to the matching Pending view
+- **Per-rep workload table** — for each BDC Agent: `open items` · `past SLA on them` · `closed in last 7d` · `avg time-to-close` · click-through to that rep's queue
+- **Escalations section** (when 8.2.B.3 ships) — items currently flagged with `escalation_reason`, sortable by oldest
+- **Access management** — who-sees-what on this rooftop (read-only in Phase 2; full add/disable in 8.2.B.2 employee directory)
+- New event subscriber path: dashboard pulls from a denormalised view (TBD by Agent Platform team) — not from raw event stream, for performance
+
+**Why this stream exists:** Today a BDC Manager opening the queue sees the same row-list as a BDC Agent. They re-create rollups manually in Excel. Phase 2 splits the surface.
+
+#### 8.2.B.2 Multi-rooftop / group-level rollups · *resolves Section 3.1 #1*
 
 **Goal:** Fixed Ops Directors and Dealer Group Owners see a combined queue across N rooftops with rooftop-level filtering, aggregated SLAs, and group-level escalation routing.
 
@@ -462,7 +555,7 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.4 Employee directory + onboarding · *resolves Section 3.1 #8*
+#### 8.2.B.3 Employee directory + onboarding · *resolves Section 3.1 #8*
 
 **Goal:** GM / BDC Manager can add, disable, and re-role team members from the console without engineering involvement. New employees appear in the Assign drawer immediately.
 
@@ -478,7 +571,7 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.5 Escalation routing & nudge cascade · *resolves Section 3.1 #7 + #14 + #18*
+#### 8.2.B.4 Escalation routing & nudge cascade · *resolves Section 3.1 #7 + #14 + #18*
 
 **Goal:** Items don't pile up. Every `escalation_reason` triggers a routing + notification path. The system auto-closes truly stale items so the queue stays actionable.
 
@@ -506,7 +599,7 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.6 Auto-assignment fallbacks · *resolves Section 3.1 #5 + #6 + #17*
+#### 8.2.B.5 Auto-assignment fallbacks · *resolves Section 3.1 #5 + #6 + #17*
 
 **Goal:** Unassigned items don't rot. Disabled-rep references don't break. Round-robin / load-balancing for proactive routing.
 
@@ -522,7 +615,7 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.7 Per-role default views & permissions · *resolves Section 3.1 #4 + #9*
+#### 8.2.B.6 Per-role default views & permissions · *resolves Section 3.1 #4 + #9*
 
 **Goal:** Each role lands on a view that matches their job. Reps don't drown in everyone's queue. Managers don't have to filter every morning.
 
@@ -541,7 +634,7 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
-#### 8.2.8 Customer history & re-open UX · *resolves Section 3.1 #10*
+#### 8.2.B.7 Customer history & re-open UX · *resolves Section 3.1 #10*
 
 **Goal:** When a customer calls back about something we already closed, the closer sees the prior history before doing it again. When an item is reopened, the new assignee sees what was tried.
 
@@ -559,11 +652,66 @@ Phase 2 ships as **8 named work streams**. Each stream resolves a specific row f
 
 ---
 
+### 8.2.C Phase 2 · Communicate
+
+Bucket goal: closure is visible to the customer and to the dealer's CRM. No more tab-switching for reps; no more 12-hour CRM lag for closure data.
+
+#### 8.2.C.1 Compose-in-drawer · *NEW (v3.0) — resolves Section 3.1 #21 (new gap, replaces "in-console messaging" non-goal #11 for this narrow case)*
+
+**Goal:** When closing with `resolution_type = info_provided` (or any type where customer communication is expected), the rep can compose + send the message from inside the Close drawer — no tab-switch to the inbox.
+
+**Ships:**
+- **Inline composer** in the Close drawer when `info_provided` / `appointment_booked` / `customer_unreachable` is selected. Channel auto-picks customer's preferred channel (SMS / email).
+- **Template picker** with the dealer's pre-approved closure templates (configured in Phase 2 settings — see 8.2.C.2)
+- **Preview pane** — exact text the customer will receive, with `{{customer_first_name}}` and `{{vehicle_make_model}}` resolved
+- **Send + Close** as one button. Atomically: emits `action_item.closed` + `action_item.customer_notified` events. If send fails, item stays pending and an inline error surfaces.
+- **Attached to resolution note** — the sent message body is appended to `resolution_note` so the audit trail is complete in one place
+- **Existing inbox surface still works** — for complex multi-turn outbound, reps still deep-link to the inbox; compose-in-drawer is the fast-path for short closure messages
+
+**Why this stream exists:** Today a rep closes the item in the Console then opens the inbox, finds the customer thread, composes a separate message, hits send. Compose-in-drawer makes it one motion.
+
+#### 8.2.C.2 Automated customer status updates · *NEW (v3.0) — resolves Section 3.1 #22 (new gap)*
+
+**Goal:** When the BDC closes a task, the customer automatically gets a templated status message — branded co-/dealer-style, sent through the dealer's preferred channel. Critically: the BDC doesn't have to compose anything.
+
+**Ships:**
+- **Trigger model** — `action_item.closed` event fires → if `resolution_type ∈ {appointment_booked, info_provided, dnc}` AND the dealer has opted in for this intent class AND the customer has consent on file → templated message dispatches
+- **Branding decisions** *(v3.0 baked-in)*:
+  - **Default:** **Co-branded** — sender display name `"[Dealer] · powered by Vini"` · template signature includes dealer name + phone
+  - **Optional upgrade:** **Dealer-branded** — when the dealer configures their own sender domain (DKIM/SPF set up) + uploads logo + signature, the messages go out fully dealer-branded. No mention of Vini in the customer-visible message.
+  - Configured per-dealer in Phase 2 settings; defaults to co-branded.
+- **Template library** — Spyne ships 8 default templates (one per low-judgment resolution: `appointment_booked` · `info_provided.quote_sent` · `info_provided.recall_verified` · `customer_unreachable.left_voicemail` · `dnc.opted_out` · etc.). Dealer can override per template.
+- **Unsubscribe + frequency cap** — every templated send respects DNC + CAN-SPAM/TCPA rules. Frequency cap: max 3 outbound templated messages per customer per day to avoid spamming someone with multiple open items.
+- New event `action_item.customer_notified` carrying `channel` · `template_id` · `dispatched_at` · `delivery_status` (set from upstream provider webhook)
+
+**Why this stream exists:** Today the customer doesn't know we closed their task. They call back 4 hours later asking. Phase 2 closes the loop without rep effort.
+
+#### 8.2.C.3 CRM sync on closure · *NEW (v3.0) — resolves Section 3.1 #5 reclassified (was CRM write-back Phase 3, now Phase 2 push-on-closure)*
+
+**Goal:** When an action item closes, the resolution pushes to the dealer's CRM — so the dealer's source of truth (Reynolds / CDK / DealerSocket / VinSolutions / etc.) stays current without manual reconciliation.
+
+**Ships:**
+- **Manual-trigger PUSH on closure** — Close drawer gets a "Sync to CRM on close" checkbox (default ON for dealers who have CRM connection configured). Clicking Close fires the close event + queues a CRM update.
+- **Vini-as-assignee auto-syncs** — when 8.2.A.3 closes an item itself, it auto-pushes (no rep involved). Configurable per dealer.
+- **What pushes:** `customer_id` · `intent_id` · `resolution_type` · `resolution_note` (truncated to CRM field limit, typically 500 chars) · `closed_at` · `closed_by_user_id` · linked `appointment_id` if any. Never pushes Vini-internal IDs.
+- **CRM adapter layer** — per-CRM mapping: Reynolds field names ≠ CDK field names ≠ DealerSocket. Adapter library ships with mappings for the top 5 CRMs based on existing 12-hour-pull integration.
+- **Existing 12-hour pull stays the read path** — Phase 2 doesn't change the pull cadence; it adds the push path. Bi-directional sub-12-hour pull is the Phase 3 target.
+- New event `action_item.crm_synced` carrying `crm_system` · `external_record_id` · `synced_at` · `sync_status` ∈ `{success, retry_scheduled, failed}` + failure reason for debugging
+- **Failure handling:** push failures retry 3× with exponential backoff. After 3 fails, item marked `crm_sync_status = failed` and surfaces a manual-retry chip in the Completed row.
+
+**Why this stream exists:** Dealers maintain two sources of truth today (Vini queue + their CRM). Phase 2 closes the gap on the push side; Phase 3 closes it on the pull side.
+
+**Open decisions for Phase 2 PRD:**
+1. **Per-CRM adapter coverage** — Reynolds + CDK + DealerSocket are table-stakes. Are we committing to VinSolutions + DealerVault in v1 of this stream, or starting with the top 3?
+2. **Frequency-cap definition** — 3 templated messages / customer / day is a guess. Dealer should be able to configure this.
+
+---
+
 ### 8.3 What "phase" means operationally
 
 - **Phase 1 is gated by Section 2 + Section 7** of this PRD.
 - **Phase 2 build is gated by Phase 1 success** AND by the ROI Emailer pod's Phase 1 having hit its own engagement floor. If either pod's Phase 1 misses, we don't invest in shared customization on a low-value base.
-- **Phase 2 work-stream sequencing:** Section 8.2.1 (routing) + Section 8.2.4 (employee directory) ship first as foundation. Section 8.2.5 (escalation) ships next because it has the most ROI per signal. Section 8.2.2 (Vini-as-assignee) requires Section 8.2.1 to land first. Section 8.2.3 (multi-rooftop) ships only after single-rooftop Phase 2 has 2+ months of evidence. Section 8.2.7 (role views) ships alongside Section 8.2.1. Section 8.2.6 fallback rules ship with Section 8.2.5; full auto-assign with Section 8.2.1.
+- **Phase 2 bucket sequencing (v3.0):** The three lifecycle buckets ship in order — **A (Create) → B (Manage) → C (Communicate)** — because each downstream stage depends on the upstream. Routing config (8.2.A.1) + employee directory (8.2.B.3) are the foundation. Manual creation (8.2.A.2) and Manager dashboard (8.2.B.1) ship next. Vini-as-assignee (8.2.A.3) requires routing config. Escalation routing (8.2.B.4) + fallback auto-assign (8.2.B.5) ship together. Multi-rooftop rollups (8.2.B.2) ships only after single-rooftop Phase 2 has 2+ months of evidence. Communicate bucket (8.2.C) ships last because compose-in-drawer (C.1) + automated customer updates (C.2) require routing + dealer-config infra from bucket A/B; CRM sync (C.3) requires per-dealer CRM adapter work that's parallel-trackable.
 
 ---
 
@@ -589,9 +737,14 @@ These specs are **prescriptive** for engineering and design. Reviewable against 
 | 9.10 | Cross-pod email-loop badge | ✅ Full spec | — |
 | 9.11 | Channel + HITL provenance | ✅ Full spec | — |
 | 9.12 | Accessibility + responsive | ✅ Full spec | — |
-| — | **Settings → Team** (employee directory · add member · disable · re-role) | — | 🚀 Section 8.2.4 · spec lives in Phase 2 PRD |
-| — | **Settings → Routing rules** (per-intent default routing) | — | 🚀 Section 8.2.1 · spec lives in Phase 2 PRD |
-| — | **Settings → Escalation config** (SLA overrides · auto-close on/off · notification channels) | — | 🚀 Section 8.2.5 · spec lives in Phase 2 PRD |
+| — | **Settings → Team** (employee directory · add member · disable · re-role) | — | 🚀 Section 8.2.B.3 · spec lives in Phase 2 PRD |
+| — | **Settings → Routing rules** (per-intent default routing) | — | 🚀 Section 8.2.A.1 · spec lives in Phase 2 PRD |
+| — | **Settings → Escalation config** (SLA overrides · auto-close on/off · notification channels) | — | 🚀 Section 8.2.B.4 · spec lives in Phase 2 PRD |
+| — | **Add action item modal** (customer-level · conversation-tagged · note-upgraded) *(v3.0)* | — | 🚀 Section 8.2.A.2 · spec lives in Phase 2 PRD |
+| — | **Manager dashboard** (aggregate SLA · unassigned · per-rep workload · escalations) *(v3.0)* | — | 🚀 Section 8.2.B.1 · spec lives in Phase 2 PRD |
+| — | **Compose-in-drawer** (inline composer + template picker + Send + Close atomic) *(v3.0)* | — | 🚀 Section 8.2.C.1 · spec lives in Phase 2 PRD |
+| — | **Settings → Customer comms templates** (8 default templates · co-branded vs dealer-branded · frequency cap) *(v3.0)* | — | 🚀 Section 8.2.C.2 · spec lives in Phase 2 PRD |
+| — | **Settings → CRM connections** (per-CRM adapter config · sync toggle · field mapping) *(v3.0)* | — | 🚀 Section 8.2.C.3 · spec lives in Phase 2 PRD |
 
 ### 9.1 Information architecture · ✅ Phase 1
 
@@ -921,6 +1074,9 @@ Every event below is emitted to the shared event bus. Both pods consume.
 | **`appointment.created`** *(v1.1, NEW)* | `appointment_id` · `customer_id` · `source_action_item_id` · `scheduled_at` · `advisor_user_id?` · `vehicle_id?` | Emitted when the Close drawer or Bulk close drawer creates a new appointment inline. Existing-appointment selection does NOT emit this event — it just sets `source_action_item_id` on the existing record. |
 | `action_item.surfaced_in_email` | `action_item_id` · `email_send_id` · `email_type` (enum: daily / weekly / monthly / eoc) · `surfaced_at` | ROI Emailer pod emits when an action item appears in an outgoing email |
 | `action_item.email_cta_clicked` | `action_item_id` · `email_send_id` · `recipient_user_id` · `clicked_at` | ROI Emailer pod emits when a recipient clicks an email CTA that deep-links to an action item |
+| **`action_item.created_manually`** *(v3.0 NEW)* | `action_item_id` · `customer_id` · `intent_id` · `creation_source` ∈ `{customer_level, conversation_tagged, note_upgraded}` · `created_by_user_id` · `source_conversation_id?` (when tagged) · `created_at` | BDC adds an action item via the Phase 2 Add-action-item modal (Section 8.2.A.2). Same downstream lifecycle as AI-created items, but `created_by_ai = false` and `creation_source ≠ ai`. |
+| **`action_item.customer_notified`** *(v3.0 NEW)* | `action_item_id` · `customer_id` · `channel` ∈ `{sms, email}` · `template_id` · `branding_mode` ∈ `{co_branded, dealer_branded}` · `dispatched_at` · `delivery_status` ∈ `{queued, delivered, bounced, blocked_dnc, blocked_frequency_cap}` | Phase 2 (Section 8.2.C.2) emits when a templated customer-facing message dispatches as a result of closure. Frequency-cap + DNC checks happen pre-dispatch and feed `delivery_status`. |
+| **`action_item.crm_synced`** *(v3.0 NEW)* | `action_item_id` · `crm_system` ∈ `{reynolds, cdk, dealersocket, vinsolutions, ...}` · `external_record_id?` · `synced_at` · `sync_status` ∈ `{success, retry_scheduled, failed}` · `failure_reason?` | Phase 2 (Section 8.2.C.3) emits when closure data pushes to the dealer's CRM. Retries 3× on failure; final failure surfaces a manual-retry chip in the Completed view. |
 
 #### 10.2.1 Phase 2 event-field additions *(v2.0 — flagged for cross-pod consumers)*
 
