@@ -80,7 +80,7 @@ export function FilterStrip({
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           placeholder="Search customer, recap…"
-          className="w-full rounded-md border border-border-subtle bg-surface-card py-1.5 pl-8 pr-7 text-[12px] shadow-xs transition-colors duration-150 placeholder:text-text-tertiary focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20"
+          className="w-full rounded-md border border-border-subtle bg-surface-card py-1.5 pl-8 pr-7 text-[12px] transition-colors duration-150 placeholder:text-text-tertiary focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20"
         />
         {filters.search ? (
           <button
@@ -118,7 +118,7 @@ export function FilterStrip({
       <select
         value={filters.age}
         onChange={(e) => onChange({ ...filters, age: e.target.value as AgeFilter })}
-        className="rounded-md border border-border-subtle bg-surface-card px-2.5 py-1.5 text-[11px] font-medium text-text-secondary shadow-xs transition-colors duration-150 focus:border-brand-purple focus:outline-none"
+        className="rounded-md border border-border-subtle bg-surface-card px-2.5 py-1.5 text-[11px] font-medium text-text-secondary transition-colors duration-150 focus:border-brand-purple focus:outline-none"
       >
         {AGE_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -152,7 +152,7 @@ export function FilterStrip({
       <div className="relative">
         <button
           onClick={() => setIntentsOpen((o) => !o)}
-          className={`flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold shadow-xs transition-colors duration-150 ${
+          className={`flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition-colors duration-150 ${
             filters.intentIds.length > 0
               ? "border-brand-purple bg-brand-purple-soft text-brand-purple"
               : "border-border-subtle bg-surface-card text-text-secondary hover:bg-surface-subtle"
@@ -193,59 +193,122 @@ export function FilterStrip({
         ) : null}
       </div>
 
-      {/* Repeat-caller toggle — Anya's escalation filter */}
+      {/* Repeat callers toggle — labelled clearly so it isn't read as "repeat the filter" */}
       <button
         onClick={() =>
           onChange({ ...filters, repeatCaller: !filters.repeatCaller })
         }
-        title="Show only customers who pinged us 3+ times"
+        title="Show only customers who contacted us 3+ times"
         aria-label="Filter to repeat callers"
         aria-pressed={filters.repeatCaller}
-        className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold shadow-xs transition-colors duration-150 ${
+        className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition-colors duration-150 ${
           filters.repeatCaller
-            ? "border-status-warning bg-status-warning-soft text-status-warning"
+            ? "border-status-past bg-status-past-soft text-status-past"
             : "border-border-subtle bg-surface-card text-text-secondary hover:bg-surface-subtle"
         }`}
       >
-        <RepeatIcon size={12} /> Repeat
+        <RepeatIcon size={12} /> Repeat callers
       </button>
 
-      <FilterDivider />
-
-      {/* Dept toggle */}
-      <div className="ml-auto inline-flex overflow-hidden rounded-md border border-border-subtle shadow-xs">
-        {(["all", "sales", "service"] as const).map((d) => (
+      <div className="ml-auto flex items-center gap-2">
+        {activeCount > 0 ? (
           <button
-            key={d}
-            onClick={() => onChange({ ...filters, dept: d })}
-            className={`px-3 py-1.5 text-[11px] font-semibold capitalize transition-colors duration-150 ${
-              filters.dept === d
-                ? "bg-brand-purple-soft text-brand-purple"
-                : "bg-surface-card text-text-secondary hover:bg-surface-subtle"
-            }`}
+            onClick={() =>
+              onChange({
+                assignment: "all",
+                intentIds: [],
+                channels: [],
+                age: "all",
+                dept: "all",
+                search: "",
+                repeatCaller: false,
+              })
+            }
+            className="text-[11px] font-medium text-brand-purple transition-colors duration-150 hover:underline"
           >
-            {d}
+            Clear {activeCount}
           </button>
-        ))}
-      </div>
+        ) : null}
 
-      {activeCount > 0 ? (
-        <button
-          onClick={() =>
-            onChange({
-              assignment: "all",
-              intentIds: [],
-              channels: [],
-              age: "all",
-              dept: "all",
-              search: "",
-              repeatCaller: false,
-            })
-          }
-          className="ml-1 text-[11px] font-medium text-brand-purple transition-colors duration-150 hover:underline"
-        >
-          Clear {activeCount}
-        </button>
+        {/* More-filters popover. Dept-segmented control moves here to declutter
+            the primary strip without losing the capability. */}
+        <MoreFilters filters={filters} onChange={onChange} />
+      </div>
+    </div>
+  );
+}
+
+function MoreFilters({
+  filters,
+  onChange,
+}: {
+  filters: PendingFilters;
+  onChange: (next: PendingFilters) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const deptActive = filters.dept !== "all";
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition-colors duration-150 ${
+          deptActive
+            ? "border-brand-purple bg-brand-purple-soft text-brand-purple"
+            : "border-border-subtle bg-surface-card text-text-secondary hover:bg-surface-subtle"
+        }`}
+      >
+        <FilterIcon size={12} /> More
+        {deptActive ? (
+          <span className="rounded bg-white px-1 text-[10px] font-bold text-brand-purple">
+            1
+          </span>
+        ) : null}
+      </button>
+      {open ? (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setOpen(false)}
+            aria-hidden
+          />
+          <div
+            role="menu"
+            className="animate-pop-in absolute right-0 top-full z-20 mt-1 w-[220px] origin-top-right overflow-hidden rounded-lg border border-border-subtle bg-surface-card shadow-md"
+          >
+            <div className="border-b border-border-subtle px-3 py-2 text-eyebrow text-text-secondary">
+              Department
+            </div>
+            <div className="p-1.5">
+              {(["all", "sales", "service"] as const).map((d) => {
+                const active = filters.dept === d;
+                return (
+                  <button
+                    key={d}
+                    onClick={() => {
+                      onChange({ ...filters, dept: d });
+                      setOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-[12px] capitalize transition-colors duration-100 ${
+                      active
+                        ? "bg-brand-purple-soft text-brand-purple font-semibold"
+                        : "text-text-primary hover:bg-surface-subtle"
+                    }`}
+                  >
+                    {d}
+                    {active ? (
+                      <span className="text-[10px] font-bold text-brand-purple">
+                        ✓
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

@@ -88,7 +88,7 @@ export function PersonaMenu() {
               View as
             </div>
             <p className="mt-0.5 text-[11px] leading-snug text-text-secondary">
-              Demo affordance — defaults the filter + "Mine" by role.
+              Demo affordance. Sets the default assignment filter by role.
             </p>
           </div>
           <ul className="py-1">

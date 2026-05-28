@@ -114,6 +114,7 @@ export function RollupStrip({
         ariaLabel={`${pastSla} past SLA, click to filter`}
         active={filters.age === "past_sla"}
         disabled={pastSla === 0}
+        pulse={pastSla > 0}
         onClick={() => onFilterChange({ ...filters, age: "past_sla" })}
       />
     </div>
@@ -154,6 +155,7 @@ function Tile({
   ariaLabel,
   active,
   disabled,
+  pulse,
   onClick,
 }: {
   icon: ComponentType<{ size?: number }>;
@@ -163,6 +165,8 @@ function Tile({
   ariaLabel: string;
   active?: boolean;
   disabled?: boolean;
+  /** Show a pulsing red dot in the top-right corner (Past SLA when count > 0). */
+  pulse?: boolean;
   onClick: () => void;
 }) {
   const t = TONE[tone];
@@ -173,29 +177,30 @@ function Tile({
       disabled={disabled}
       aria-label={ariaLabel}
       aria-pressed={active ? true : undefined}
-      className={`group relative flex h-[88px] flex-col items-start justify-between rounded-xl border bg-surface-card px-4 py-3 text-left shadow-xs transition-all duration-150 ease-smooth ${
+      className={`group relative flex h-[92px] flex-col items-start justify-between rounded-lg border bg-surface-card px-4 py-3 text-left transition-all duration-150 ${
         disabled
           ? "cursor-default border-border-subtle opacity-60"
           : active
-          ? "border-brand-purple shadow-md ring-1 ring-brand-purple/20"
+          ? "border-brand-purple bg-brand-purple-soft/40 ring-1 ring-brand-purple/30"
           : `border-border-subtle ${t.ring} hover:-translate-y-px hover:border-border-strong hover:shadow-sm`
       }`}
     >
       {/* Header row — icon + label */}
       <div className="flex w-full items-center justify-between">
         <span
-          className={`flex h-6 w-6 items-center justify-center rounded-md transition-colors ${t.icon}`}
+          className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${t.icon}`}
         >
-          <Icon size={13} />
+          <Icon size={14} />
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-text-tertiary">
-          {label}
+        <span className="flex items-center gap-1.5">
+          {pulse ? <span className="pulse-dot" aria-hidden /> : null}
+          <span className="text-meta-label text-text-secondary">
+            {label}
+          </span>
         </span>
       </div>
       {/* Value — the hero number */}
-      <span
-        className={`tabular text-[22px] font-semibold leading-none tracking-tight ${t.value}`}
-      >
+      <span className={`text-display leading-none ${t.value}`}>
         {value}
       </span>
     </button>

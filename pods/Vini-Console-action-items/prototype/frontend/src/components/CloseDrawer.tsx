@@ -231,7 +231,7 @@ export function CloseDrawer({
                 className="mt-1.5 w-full rounded-md border border-border-subtle px-3 py-2 text-[13px] focus:border-brand-purple focus:outline-none"
               />
               <p className="mt-1 text-[10px] text-text-tertiary">
-                Resolution notes are BDC-internal · never appear in customer-facing emails.
+                Resolution notes are BDC-internal. Never appear in customer-facing emails.
               </p>
             </div>
 
@@ -244,7 +244,7 @@ export function CloseDrawer({
 
           <footer className="flex flex-shrink-0 items-center justify-between gap-2 border-t border-border-subtle bg-white px-5 py-3">
             <span className="text-[11px] text-text-tertiary">
-              Closing this item only · other items on this customer stay open
+              Closing this item only. Other items on this customer stay open.
             </span>
             <div className="flex items-center gap-2">
               <Button variant="secondary" onClick={onClose}>

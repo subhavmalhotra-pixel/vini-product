@@ -9,54 +9,60 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Spyne brand
+        // Spyne brand · LOCKED · DESIGN_SYSTEM.md v1
         brand: {
-          purple: "#6E2DFF",
-          "purple-hover": "#5B1FE0",
-          "purple-soft": "#F1ECFF",
-          "purple-border": "#E4D8FF",
+          // Canonical primary — was #6E2DFF, migrated to Spyne #4600F2
+          purple: "#4600F2",
+          "purple-hover": "#3500B8",
+          "purple-soft": "#F0EAFF", // ~6% opaque tint of #4600F2
+          "purple-border": "#D9CCFF",
+          // Alias for forward use — Spyne calls this "brand-primary"
+          primary: "#4600F2",
+          "primary-soft": "#F0EAFF",
+          "primary-dark": "#3500B8",
         },
-        // Intent dept colors
+        // Intent dept colors — kept (departments are domain-specific, not Spyne brand)
         dept: {
-          sales: "#2563EB",
+          sales: "#3B82F6",
           "sales-soft": "#EFF6FF",
-          service: "#059669",
+          service: "#027A48",
           "service-soft": "#ECFDF5",
-          both: "#475569",
-          "both-soft": "#F1F5F9",
-          compliance: "#DC2626",
-          "compliance-soft": "#FEF2F2",
+          both: "#6B7280",
+          "both-soft": "#F3F4F6",
+          compliance: "#D13313",
+          "compliance-soft": "#FDECE9",
         },
-        // Status colors
+        // Status colors · per DESIGN_SYSTEM Semantic table
         status: {
-          past: "#DC2626",
-          "past-soft": "#FEF2F2",
-          warning: "#D97706",
-          "warning-soft": "#FFFBEB",
-          ok: "#059669",
-          "ok-soft": "#ECFDF5",
-          neutral: "#64748B",
-          "neutral-soft": "#F8FAFC",
+          past: "#D13313", // error
+          "past-soft": "#FDECE9", // error at ~10%
+          warning: "#FACC15", // warning yellow
+          "warning-soft": "#FEF9C3",
+          "warning-ink": "#854D0E", // legible label text on light bg
+          ok: "#027A48", // success
+          "ok-soft": "#E6F4EE",
+          neutral: "#6B7280",
+          "neutral-soft": "#F4F5F8",
         },
         surface: {
-          // Page background — slightly cooler off-white so cards "lift" off it
-          background: "#F6F7F9",
+          // Spyne locked page background
+          background: "#F4F5F8",
           card: "#FFFFFF",
           subtle: "#F4F5F8",
-          // Slightly darker tier for active selections / hover on selected
           muted: "#EEF0F4",
         },
         text: {
-          primary: "#0F172A",
-          secondary: "#475569",
-          tertiary: "#94A3B8",
-          muted: "#CBD5E1",
+          primary: "#1A1A1A",
+          secondary: "#6B7280",
+          tertiary: "#9CA3AF",
+          muted: "#D1D5DB",
         },
         border: {
           subtle: "#E5E7EB",
-          strong: "#CBD5E1",
-          // Stronger ring tone for focused-row left accent
-          accent: "#6E2DFF",
+          // Subtle column dividers ~45% per Spyne `border-muted`
+          muted: "rgba(229, 231, 235, 0.45)",
+          strong: "#D1D5DB",
+          accent: "#4600F2",
         },
       },
       fontFamily: {
@@ -66,16 +72,15 @@ const config: Config = {
       fontSize: {
         "2xs": "11px",
       },
-      // Refined elevation scale — Linear / Stripe-style soft shadows
-      // (slate-900 base @ low opacity, never pure-black drop)
+      // Elevation scale per Spyne DESIGN_SYSTEM. Prefer borders over shadows;
+      // shadows reserved for true floating surfaces (drawer, popover, tooltip).
       boxShadow: {
-        "xs": "0 1px 2px 0 rgba(15, 23, 42, 0.04)",
-        "sm": "0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04)",
-        "md": "0 4px 8px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.04)",
-        "lg": "0 10px 24px -4px rgba(15, 23, 42, 0.10), 0 4px 8px -2px rgba(15, 23, 42, 0.04)",
-        "xl": "0 20px 32px -8px rgba(15, 23, 42, 0.12), 0 8px 12px -4px rgba(15, 23, 42, 0.06)",
-        "drawer": "-12px 0 32px -8px rgba(15, 23, 42, 0.14), -4px 0 8px -2px rgba(15, 23, 42, 0.06)",
-        "tile-active": "0 0 0 1px #6E2DFF, 0 1px 2px 0 rgba(110, 45, 255, 0.10)",
+        "xs": "0 1px 2px rgba(17, 17, 17, 0.04)",
+        "sm": "0 1px 2px rgba(0, 0, 0, 0.06)",
+        "md": "0 4px 12px rgba(0, 0, 0, 0.08)",
+        "lg": "0 12px 32px rgba(0, 0, 0, 0.12)",
+        "drawer": "-12px 0 32px -8px rgba(0, 0, 0, 0.14), -4px 0 8px -2px rgba(0, 0, 0, 0.06)",
+        "tile-active": "0 0 0 1px #4600F2, 0 1px 2px 0 rgba(70, 0, 242, 0.10)",
       },
       transitionTimingFunction: {
         spring: "cubic-bezier(0.34, 1.3, 0.64, 1)",

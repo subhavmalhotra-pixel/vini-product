@@ -104,7 +104,7 @@ function TopHeader() {
     <header className="flex h-12 flex-shrink-0 items-center justify-between border-b border-border-subtle bg-surface-card px-5">
       <div className="flex items-center gap-2.5">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-purple text-xs font-bold text-white shadow-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-purple text-xs font-bold text-white">
             S
           </div>
           <div className="leading-tight">
@@ -119,12 +119,12 @@ function TopHeader() {
       <div className="flex items-center gap-2">
         <Link
           to="/docs"
-          className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface-card px-2.5 py-1 text-xs font-medium text-text-secondary shadow-xs transition-all duration-150 hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple hover:shadow-sm"
-          title="Signal · PRD · ICP · Design"
+          className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-all duration-150 hover:border-brand-purple hover:bg-brand-purple-soft hover:text-brand-purple hover:shadow-sm"
+          title="Signal, PRD, ICP, Design"
         >
           <MailEnvelopeIcon size={13} /> Docs
         </Link>
-        <div className="flex items-center gap-1.5 rounded-md border border-brand-purple-border bg-brand-purple-soft px-2.5 py-1 shadow-xs">
+        <div className="flex items-center gap-1.5 rounded-md border border-brand-purple-border bg-brand-purple-soft px-2.5 py-1">
           <span className="text-xs font-semibold text-brand-purple">
             Studio AI
           </span>
@@ -132,7 +132,7 @@ function TopHeader() {
             PRO
           </span>
         </div>
-        <button className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface-card px-2.5 py-1 text-xs font-medium text-text-secondary shadow-xs transition-all duration-150 hover:bg-surface-subtle hover:shadow-sm">
+        <button className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface-card px-2.5 py-1 text-xs font-medium text-text-secondary transition-all duration-150 hover:bg-surface-subtle hover:shadow-sm">
           <GlobeIcon size={14} /> Website
         </button>
 

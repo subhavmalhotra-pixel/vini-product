@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Spyne design system · CSS variables · DESIGN_SYSTEM.md v1
+   Mirror of the locked brand tokens so any component can use
+   var(--color-brand-primary) etc. per the Spyne reference.
+   ============================================================ */
+:root {
+  /* Brand */
+  --color-brand-primary: #4600F2;
+  --color-brand-primary-soft: rgba(70, 0, 242, 0.08);
+  --color-brand-primary-dark: #3500B8;
+  --color-brand-gradient: linear-gradient(135deg, #7C3AED 0%, #DB2777 55%, #F59E0B 100%);
+
+  /* Semantic */
+  --color-success: #027A48;
+  --color-success-soft: rgba(2, 122, 72, 0.10);
+  --color-warning: #FACC15;
+  --color-warning-ink: #854D0E;
+  --color-error: #D13313;
+  --color-error-soft: rgba(209, 51, 19, 0.10);
+  --color-info: #3B82F6;
+
+  /* Neutrals */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B7280;
+  --color-text-inverse: #FFFFFF;
+  --color-surface: #FFFFFF;
+  --color-page-bg: #F4F5F8;
+  --color-border: #E5E7EB;
+  --color-border-muted: rgba(229, 231, 235, 0.45);
+}
+
 @layer base {
   html, body, #root {
     height: 100%;
@@ -19,9 +50,9 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Subtle focus styling — preserve focus visibility for keyboard nav (a11y) */
+  /* Spyne focus ring — soft primary @ 8% per DESIGN_SYSTEM */
   *:focus-visible {
-    @apply outline-none ring-2 ring-brand-purple ring-offset-2;
+    @apply outline-none ring-2 ring-brand-purple-soft ring-offset-2;
     ring-offset-color: white;
   }
 
@@ -33,6 +64,48 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+/* ============================================================
+   Spyne typography tokens · component classes
+   Use these instead of one-off Tailwind size/weight pairs.
+   ============================================================ */
+@layer components {
+  .text-display {
+    @apply text-[28px] font-bold leading-[1.1] tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+  .text-page-title {
+    @apply text-[22px] font-semibold leading-[1.2] tracking-tight;
+  }
+  .text-card-title {
+    @apply text-[15px] font-semibold leading-[1.2];
+  }
+  .text-section-title {
+    @apply text-[14px] font-semibold leading-[1.4];
+  }
+  .text-body {
+    @apply text-[14px] font-normal leading-[1.5];
+  }
+  .text-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-widest;
+  }
+  .text-meta-label {
+    @apply text-[10px] font-semibold uppercase tracking-widest;
+  }
+
+  /* Pulsing dot — used to flag past-SLA rows + the Past SLA stat tile.
+     Subtle on light backgrounds; matches the Spyne live-status pattern. */
+  .pulse-dot {
+    @apply inline-block h-1.5 w-1.5 rounded-full bg-status-past;
+    box-shadow: 0 0 0 0 rgba(209, 51, 19, 0.5);
+    animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(209, 51, 19, 0.45); }
+    70%  { box-shadow: 0 0 0 6px rgba(209, 51, 19, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(209, 51, 19, 0); }
   }
 }
 

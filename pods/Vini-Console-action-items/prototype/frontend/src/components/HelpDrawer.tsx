@@ -34,7 +34,7 @@ export function HelpDrawer({
       <div className="px-5 py-4">
         <p className="text-[12px] text-text-secondary">
           Move through the queue without leaving the keyboard. All shortcuts
-          are single keys — no modifiers.
+          are single keys. No modifiers.
         </p>
 
         <dl className="mt-4 space-y-2">

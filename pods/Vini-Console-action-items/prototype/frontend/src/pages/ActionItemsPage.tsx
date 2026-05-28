@@ -175,10 +175,10 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Phase 2 hook — Add action manually (BDC agents) */}
+            {/* Phase 2 hook · Add action manually (BDC agents) */}
             <Phase2GhostButton
               label="Add action"
-              tooltip="Manual creation by BDC agents — coming in Phase 2"
+              tooltip="Manual creation by BDC agents. Coming in Phase 2."
               icon="+"
             />
             <button
@@ -193,20 +193,20 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
           </div>
         </div>
 
-        {/* Tabs — Pending / Completed · Team locked as Phase 2 */}
+        {/* Tabs — parenthetical counts per Spyne DESIGN_SYSTEM.
+            (`Pending (12)` not a chip badge alongside the count.)
+            Team tab locked behind a Phase 2 affordance. */}
         <nav
           className="mt-4 -mb-px flex items-center gap-0"
           aria-label="Action item views"
         >
           <TabLink to="/action-items/pending" active={isPending}>
             <ClockIcon size={13} />
-            Pending
-            <TabBadge active={isPending}>{pending.length}</TabBadge>
+            Pending&nbsp;<span className="tabular text-text-tertiary">({pending.length})</span>
           </TabLink>
           <TabLink to="/action-items/completed" active={!isPending}>
             <CheckIcon size={13} />
-            Completed
-            <TabBadge active={!isPending}>{completed.length}</TabBadge>
+            Completed&nbsp;<span className="tabular text-text-tertiary">({completed.length})</span>
           </TabLink>
           <Phase2Tab label="Team" />
         </nav>
@@ -329,32 +329,12 @@ function Phase2Tab({ label }: { label: string }) {
   return (
     <span
       className="relative flex cursor-not-allowed items-center gap-1.5 px-3 pb-3 pt-1 text-[13px] font-semibold text-text-tertiary opacity-70"
-      title="Manager dashboard — coming in Phase 2"
+      title="Manager dashboard. Coming in Phase 2."
     >
       {label}
       <span className="rounded-full border border-dashed border-border-strong px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide text-text-tertiary">
         soon
       </span>
-    </span>
-  );
-}
-
-function TabBadge({
-  active,
-  children,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={`rounded-full px-1.5 py-px text-[10px] font-bold tabular ${
-        active
-          ? "bg-brand-purple text-white"
-          : "bg-surface-subtle text-text-tertiary"
-      }`}
-    >
-      {children}
     </span>
   );
 }
