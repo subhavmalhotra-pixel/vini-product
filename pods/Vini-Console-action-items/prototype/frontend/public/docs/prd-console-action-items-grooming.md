@@ -3,7 +3,16 @@
 **Audience:** Eng / Design / PM grooming sessions · 5-minute read.
 **Companion to:** the full PRD at `prd-console-action-items.md` (route `/docs/prd`). This snippet picks the load-bearing summary tables out of the full doc — every row links back to the full section for detail.
 
-**Updated for v3.0:** PRD now framed as a **3-stage task-tracker system** (Create → Manage → Communicate). 3 new capabilities added: manual creation by BDC, Manager dashboard, Communication pillar (compose-in-drawer + automated customer status updates + CRM sync on closure).
+**Updated for v3.1 *(01 Jun 2026 grooming + customer feedback)*:**
+- **Mark as incorrect** path added to Phase 1 (distinct from Close · excluded from closure-rate denominators · feeds AI eval loop)
+- **SLA-burn-ratio sort** replaces age-based sort as the queue's primary key (critical intents bubble up regardless of absolute age)
+- **Multi-item carousel** when a customer has ≥2 open items (one card with horizontal scroll, click-to-next chevron in drawers)
+- **RollupStrip refresh** to manager-grade metrics: `Open · Unassigned · Past SLA · Repeat callers` (drops Oldest)
+- **Leads** added as the 6th customer-profile collection (was 5)
+- **Transfer edge case** — `transfer_outcome` captured Phase 1; `auto_close_on_transfer` dealer-config flag Phase 2
+- **Buyer-persona scoring** explicitly deferred to Phase 3
+
+**Updated for v3.0:** PRD framed as a **3-stage task-tracker system** (Create → Manage → Communicate). 3 new capabilities added: manual creation by BDC, Manager dashboard, Communication pillar (compose-in-drawer + automated customer status updates + CRM sync on closure).
 
 ---
 

@@ -1,34 +1,33 @@
 import type { ActionItem } from "@test-data";
-import { ageMinutes, ageLabel, slaState } from "../data/helpers";
+import { slaState } from "../data/helpers";
 import type { PendingFilters } from "./FilterStrip";
 import { MaterialSymbol } from "./MaterialSymbol";
 
 /**
  * Core metrics grid · console-revamp/components.md MetricCard pattern.
  *
- * Per the canonical console anatomy:
- *   - bar_chart icon header + label (13px / 500)
- *   - hero value: 28px / 600 / tabular
- *   - delta line: 12px tabular + arrow + "From yesterday"
- *   - target line: 12px muted "Target: X"
+ * v3.1 (01 Jun grooming): tiles are now the four metrics the Manager
+ * actually grades on — `Open · Unassigned · Past SLA · Repeat callers`.
+ * "Oldest age" demoted to a per-row signal (redundant once the SLA-burn
+ * sort already floats the worst-burnt row to position #1).
  *
- * Polarity rule per voice.md: every metric here is lower-is-better,
- * so a negative delta is GOOD (green), positive is BAD (red).
+ * Polarity rule per console voice.md: every metric here is
+ * lower-is-better, so falling = green improvement, rising = red regression.
  */
 
-/** Yesterday's snapshot · mocked (skill permits — wire to analytics later). */
+/** Yesterday's snapshot · mocked. Wire to analytics in Phase 2. */
 const COMPARE_TO = {
   total: 28,
-  oldestMins: 9 * 60 + 30,
   unassigned: 6,
   pastSla: 0,
+  repeatCallers: 1,
 };
 
 const TARGETS = {
   total: "< 50",
-  oldest: "< 4h",
   unassigned: "0",
   pastSla: "0",
+  repeatCallers: "0",
 };
 
 export function RollupStrip({
@@ -41,16 +40,9 @@ export function RollupStrip({
   onFilterChange: (next: PendingFilters) => void;
 }) {
   const total = pending.length;
-
-  const oldestMins = pending.reduce(
-    (max, item) => Math.max(max, ageMinutes(item)),
-    0
-  );
-  const oldestLabel =
-    total === 0 ? "—" : ageLabel(oldestMins).replace(/\s*ago$/, "");
-
   const unassigned = pending.filter((i) => !i.assignee_user_id).length;
   const pastSla = pending.filter((i) => slaState(i) === "past").length;
+  const repeatCallers = pending.filter((i) => i.repeat_caller_count >= 3).length;
 
   const allActive =
     filters.assignment === "all" &&
@@ -88,24 +80,6 @@ export function RollupStrip({
           ariaLabel={`${total} open. ${comparativeText(total, COMPARE_TO.total)} yesterday.`}
         />
         <MetricCard
-          icon="schedule"
-          label="Oldest"
-          value={oldestLabel}
-          target={`Target: ${TARGETS.oldest}`}
-          deltaPct={pctChange(oldestMins, COMPARE_TO.oldestMins)}
-          lowerIsBetter
-          warning={total > 0 && oldestMins >= 240}
-          disabled={total === 0}
-          onClick={() => {
-            onFilterChange({ ...filters, search: "" });
-            window.requestAnimationFrame(() => {
-              const firstRow = document.querySelector("[data-pending-row]");
-              firstRow?.scrollIntoView({ behavior: "smooth", block: "start" });
-            });
-          }}
-          ariaLabel={total === 0 ? "No items in queue." : `Oldest ${oldestLabel}.`}
-        />
-        <MetricCard
           icon="person_off"
           label="Unassigned"
           value={unassigned.toLocaleString()}
@@ -131,6 +105,19 @@ export function RollupStrip({
           disabled={pastSla === 0}
           onClick={() => onFilterChange({ ...filters, age: "past_sla" })}
           ariaLabel={`${pastSla} past SLA.`}
+        />
+        <MetricCard
+          icon="autorenew"
+          label="Repeat callers"
+          value={repeatCallers.toLocaleString()}
+          target={`Target: ${TARGETS.repeatCallers}`}
+          deltaPct={pctChange(repeatCallers, COMPARE_TO.repeatCallers)}
+          lowerIsBetter
+          threat={repeatCallers > 0}
+          active={filters.repeatCaller}
+          disabled={repeatCallers === 0}
+          onClick={() => onFilterChange({ ...filters, repeatCaller: !filters.repeatCaller })}
+          ariaLabel={`${repeatCallers} repeat callers.`}
         />
       </div>
     </div>

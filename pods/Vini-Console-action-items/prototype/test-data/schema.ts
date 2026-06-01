@@ -139,7 +139,15 @@ export interface Conversation {
 // ACTION ITEM (this pod's atomic unit)
 // =========================================================================
 
-export type ActionItemStatus = "pending" | "completed";
+export type ActionItemStatus = "pending" | "completed" | "incorrect";
+
+/** Reasons feeding the AI eval loop. See PRD §10.2 `action_item.marked_incorrect`. */
+export type IncorrectReason =
+  | "wrong_intent"
+  | "not_a_task"
+  | "customer_did_not_say_this"
+  | "duplicate_of_existing"
+  | "other";
 
 export type ResolutionType =
   | "appointment_booked"
@@ -175,6 +183,12 @@ export interface ActionItem {
   closed_by_user_id?: string;
   resolution_note?: string;
   resolution_type?: ResolutionType;
+
+  // marked-as-incorrect state · status === "incorrect"
+  marked_incorrect_at?: string;
+  marked_incorrect_by_user_id?: string;
+  incorrect_reason?: IncorrectReason;
+  incorrect_reason_note?: string;
 
   // When resolution_type === "appointment_booked" — the appointment that resolved this item
   closed_with_appointment_id?: string;

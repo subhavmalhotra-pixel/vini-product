@@ -4,11 +4,33 @@
 **Product:** Vini
 **Pod:** Vini Product Team
 **Date:** 20 May 2026
-**Status:** draft v3.0 — restructured as a **3-stage task-tracker system** (Create / Manage / Communicate) · Section 10 signed off cross-pod 19 May 2026 · 3 new lifecycle events
+**Status:** draft v3.1 — incorporates 01 Jun 2026 engineering-grooming transcript + same-week customer-call feedback (intent-SLA prioritisation, transfer edge case, source context for SMS/email, mark-as-incorrect, multi-item carousel, leads as 6th customer collection, manager-tile refresh)
 
 > A condensed **grooming snippet** of this PRD is maintained separately at `prd-console-action-items-grooming.md` (route `/docs/prd-grooming`). The full detailed scope, prescriptive specs, and event schema live in this document.
 
 ---
+
+> **What changed v3.0 → v3.1 (01 Jun 2026):**
+> Combined update folding the 01 Jun engineering-grooming transcript (Subhav · Ankit · eng team) and the same-week customer-call feedback (intent-SLA prioritisation, source context, transfer edge case).
+>
+> **Phase 1 scope additions (engineering-actionable now):**
+> - **Mark as incorrect** — new action distinct from Close. AI-generated false-positive action items get a `mark_as_incorrect` path that excludes them from closure-rate metrics and feeds the AI eval loop. New event `action_item.marked_incorrect` (Section 10.2).
+> - **SLA-burn-ratio sort** — the queue's primary sort key changes from absolute age to `elapsed_minutes / (intent.sla_hours × 60)`. A 30-min-old recall query at 25% SLA burn outranks a 6-hour-old general-info item at 25% burn only if their burns are equal; a 90%-burn item always floats to the top regardless of absolute age. (Section 8.1.B + 9.2.)
+> - **Multi-item combined card** — when one customer has ≥2 open items, the row expands into a horizontal carousel inside a single card (not 2-3 separate rows). Bulk close from the carousel. Click-to-next chevron in every drawer header to step between a customer's items without going back to the queue. (Section 9.2 + 9.5 / 9.6 / 9.7.)
+> - **Manager rollup tile refresh** — `Open · Unassigned · Past SLA · Repeat callers` (4 tiles). Drops the "Oldest age" tile per Anya's verbatim ("कितने open पड़े, कितने unassigned हैं और कितने ऐसे लिए bridge कर चुके हैं"). Oldest stays as a per-row signal but is no longer the primary manager-grade metric. (Section 9.0 / 9.2.)
+> - **Source context for non-call channels** — for SMS / email, the SourceDrawer anchors to the exact timestamped message that created the action item ("This SMS at 10:42 AM on May 16 created this item") instead of dumping the full thread. Calls keep the full-call-ID + recording pattern. (Section 9.2 expanded-row + 9.11.)
+> - **Customer-level data root locked + 6 collections** — Signal §9.1's 5 collections become 6: **Details · Vehicles · Conversations · Action items · Appointments · Leads**. Leads roll up to the customer (unifying sales + service views) per the transcript decision. (Section 9.1 + 9.4.)
+> - **Repeat-caller seed data** — prototype gains at least one Gary-Wise-style case (3+ contacts in 3 days mapped to a single open action item) so the chip and the new rollup tile demo correctly.
+>
+> **Phase 2 lock-ins (deferred but committed):**
+> - **Transfer edge case** — capture `transfer_outcome` ∈ {`none`, `warm_transfer`, `hard_transfer`, `failed_transfer`} on every Conversation. New dealer-config field `auto_close_on_transfer: bool` (default false) — when true and transfer succeeded, action items spawned by that conversation auto-close with `resolution_type: transferred_to_human` and a synthetic note. When false (default), items stay open with a "Transferred" badge so the BDC can verify. (Section 8.2.A routing-config + 10.2 event-fields.)
+> - **Customizable SLAs + intent severity per dealer** — confirmed: §10.5 SLA values are the global defaults; the Phase-2 onboarding config layer (§8.2.A.1) lets each rooftop override intent ordering + severity. (No PRD change; transcript locks the call.)
+> - **DMS appointment write on close** — confirmed Phase 2 (§9.6 already deferred; transcript confirms scope).
+>
+> **Non-goals additions (Section 3):**
+> - **Buyer-persona scoring beyond `customer_type`** → Phase 3. Proper persona-driven priority needs CRM enrichment beyond the 12-hour pull baseline.
+>
+> ---
 
 > **What changed v2.1 → v3.0 (22 May 2026):**
 > - **The Action Items section is now framed as a complete task-tracker system, not a queue.** Three lifecycle stages: **Create → Manage → Communicate**. Every Section in the PRD is re-clustered around these stages — Section 1 JTBD, Section 3 non-goals, Section 8 phases, Section 9 UI specs, Section 10 events all reorganised.
@@ -175,6 +197,8 @@ Phase 1 is the **readable, accountable single-rooftop queue**. Everything else i
 | 20 | **BDC Manager dashboard** *(NEW v3.0)* | Manager sees the same per-row queue as a BDC Agent. No aggregate SLA panel, no unassigned-volume widget, no per-rep workload view. Managers recreate rollups in Excel. | 🚀 **Phase 2** Section 8.2.B.1 | New top-level surface sibling to Pending/Completed. Includes access-management. |
 | 21 | **Compose-in-drawer (close + send in one motion)** *(NEW v3.0)* | Reps close an item in the Console, then switch to the inbox to send the customer a message. Two-step workflow; tab-switch is friction. | 🚀 **Phase 2** Section 8.2.C.1 | Narrower than the original #11 "in-console messaging" non-goal — compose-in-drawer is closure-message only, not full inbox. Existing inbox surface still owns multi-turn outbound. |
 | 22 | **Automated customer status updates** *(NEW v3.0)* | When a BDC closes a task, the customer gets no automated message. They call back hours later asking if anyone replied. | 🚀 **Phase 2** Section 8.2.C.2 | Co-branded by default · dealer-branded with template config. Frequency cap + DNC/TCPA-safe. Triggered on `action_item.closed` for opted-in dealer + intent class. |
+| 23 | **Buyer-persona scoring beyond `customer_type`** *(NEW v3.1)* | Prioritisation considers `customer_type` (new / returning / lapsed) but not deeper persona signals — buying-stage, lifetime value, lead source quality, demographic. Engineering grooming raised this; we deferred. | 🔮 **Phase 3** | Needs CRM enrichment beyond the 12-hour pull baseline. Phase 1's SLA-burn-ratio sort already accounts for intent-criticality; Phase 2 ships per-dealer SLA + severity overrides. Persona-scoring is the next layer beyond that. |
+| 24 | **Auto-close on transfer** *(NEW v3.1)* | When a call is transferred (`transfer_outcome ∈ {warm_transfer, hard_transfer}`), action items spawned by that call may or may not need a Vini-side closure — depends on dealer policy. | 🚀 **Phase 2** Section 8.2.A.1 routing-config | New dealer-config flag `auto_close_on_transfer: bool` (default false). When true and transfer succeeded → items auto-close with `resolution_type: transferred_to_human` + synthetic note. When false → items stay open with a "Transferred" badge for BDC verification. Phase 1 captures `transfer_outcome` on the source conversation; Phase 2 wires the config and the auto-close pipeline. |
 
 ### 3.2 What Phase 1 DOES handle (clarifications)
 
@@ -188,6 +212,11 @@ A few things are easy to mistake for non-goals — calling them out so we don't 
 | ✅ | **Repeat-caller chip + customer-profile escalation banner** | Section 9.4 + Section 9.8 — Phase 1 *renders* the count. Auto-reassign-to-manager is #7. |
 | ✅ | **Vini-as-assignee instruction capture** | Section 9.5 — the textarea + 10-char minimum. Vini actually *resolving* the item is #3. |
 | ✅ | **Graceful degradation when an assignee is disabled** | Section 9.5 — the user dropdown filters out disabled users; existing references to disabled users render as `[former team member]`. Adding new employees (#8) is Phase 2. |
+| ✅ | **Mark as incorrect** *(NEW v3.1)* | Section 9.2 + 10.2 — distinct from Close. AI-generated false-positive items get a `mark_as_incorrect` path so they're removed from the queue without inflating the closure-rate denominator. Emits `action_item.marked_incorrect` (new event); reasons feed the AI eval loop in Section 5. |
+| ✅ | **SLA-burn-ratio sort** *(NEW v3.1)* | Section 9.2 — the queue's primary sort key is `elapsed_minutes ÷ (intent.sla_hours × 60)` (descending), with absolute age as the tie-break. Critical-intent items (recall, compliance) bubble up to the top relative to longer-SLA intents like `general_info`. Per dealer SLA overrides are Phase 2 (#23). |
+| ✅ | **Multi-item combined card + click-to-next** *(NEW v3.1)* | Section 9.2 — when a customer has ≥2 open items the row expands into a horizontal carousel (3 slides max) inside one card with a `1 of 3 ›` chevron. Every drawer header gets a `‹ prev item · next item ›` cluster to walk a customer's items without bouncing back to the queue. Bulk-close button at the carousel footer (already shipped in 9.7). |
+| ✅ | **`transfer_outcome` capture on every Conversation** *(NEW v3.1)* | Section 10.2 — Phase 1 captures the field so Phase 2 routing-config has the signal to consume. Phase 1 also renders a `Transferred` badge on rows whose source conversation carries `transfer_outcome ≠ none`. Phase 1 does NOT auto-close on transfer (#24 is Phase 2). |
+| ✅ | **Leads as the 6th customer-profile collection** *(NEW v3.1)* | Section 9.1 + 9.4 — was 5 collections, becomes 6 (Details · Vehicles · Conversations · Action items · Appointments · **Leads**). Salespeople and service advisors are usually different humans, but they share one customer record — Leads roll up so the queue + drawer reads as one journey. |
 
 ---
 
@@ -728,7 +757,7 @@ These specs are **prescriptive** for engineering and design. Reviewable against 
 | 9.1 | Information architecture | ✅ Pending / Completed / Customer Profile · 3 surfaces | 🚀 + Group queue (Section 8.2.3) |
 | 9.2 | Pending view (collapsed row + expand) | ✅ Full spec | 🚀 + role-default filters (Section 8.2.7) · "+N prior closes" chip (Section 8.2.8) |
 | 9.3 | Completed view (search + facets + grouping + CSV) | ✅ Full spec | — |
-| 9.4 | Customer profile (5 collections + repeat-caller banner) | ✅ Details + Action items first-class; rest stub-linked | 🚀 + full Vehicles / Conversations / Appointments rendering · customer history timeline (Section 8.2.8) |
+| 9.4 | Customer profile (**6 collections** + repeat-caller banner) *(v3.1: leads added)* | ✅ Details + Action items first-class; rest stub-linked | 🚀 + full Vehicles / Conversations / Appointments / **Leads** rendering · customer history timeline (Section 8.2.8) |
 | 9.5 | Assign drawer (+ Vini instructions) | ✅ Full spec | 🚀 + suggested-assignee from auto-routing config (Section 8.2.1) |
 | 9.6 | Close drawer (+ appointment picker) | ✅ Full spec | — |
 | 9.7 | Bulk close drawer (multi-intent customer-level) | ✅ Full spec | — |
@@ -780,7 +809,7 @@ The pending view is the BDC's primary work surface. **Visual density follows a D
 
 **Active-filter count** + one-click "Clear N" when any filter is non-default.
 
-**Default sort:** customer wait-time descending. Secondary sort: `is_primary_intent_of_source` descending.
+**Default sort *(v3.1)*:** **SLA-burn ratio descending** — primary key is `elapsed_minutes ÷ (intent.sla_hours × 60)`. Tie-break 1: absolute age descending. Tie-break 2: `is_primary_intent_of_source` descending. A 90%-burn item floats above a 25%-burn item even if the second is older in absolute terms. Per-dealer SLA overrides (Section 8.2.A.1) feed the same formula.
 
 **Row anatomy — collapsed state (bare minimum)**
 
@@ -865,7 +894,7 @@ Reached by clicking a customer name anywhere in the queue. The 5-collection view
 - Customer-type chip: `New` / `Returning` / `Lapsed`
 - **Repeat-caller banner** (conditional): amber bar across the top of the profile when the customer has ≥ 3 conversations on the same `intent_id` in 7d. Copy: *"This customer has called 5 times for status_update in the last 3 days. Consider escalating."* Includes one-click `Escalate to manager` button (emits `action_item.escalated` with `escalation_reason = repeat_caller_threshold`).
 
-**Five collection tabs (left-to-right):**
+**Six collection tabs (left-to-right)** *(v3.1: Leads added as the 6th collection — engineering grooming 01 Jun 2026)*
 
 | Tab | What it shows in Phase 1 |
 |---|---|
@@ -874,8 +903,11 @@ Reached by clicking a customer name anywhere in the queue. The 5-collection view
 | **Conversations** | Chronological list of every conversation across channels for this customer. Each row: timestamp · channel icon · `primary_intent_id` chip · `intent_ids[]` secondary chips · outcome enum · click-to-listen / click-to-thread |
 | **Action items** *(opens by default when arriving from a row click)* | Customer's pending (top) and completed (bottom). When pending count ≥ 2, the Pending section gains a **"Resolve N together"** CTA and per-row multi-select checkboxes that open the Bulk Close Drawer (Section 9.7). |
 | **Appointments** | Read-only list of scheduled / shown / no-show / completed appointments. Links out to the existing appointments page. No new rendering work in Phase 1. |
+| **Leads** *(NEW v3.1)* | Read-only list of leads attached to this customer · source (AutoTrader, dealer site, walk-in, etc.) · vehicle-of-interest · sales rep owner · status. **One customer, many leads** — multiple sales touches AND service touches roll up to the same customer record. Phase 1 stubs the rendering; Phase 2 adds the full timeline + lead-level action-item linking. |
 
-The customer profile is **the surface that closes the loop on signal Section 9.1's promise**: "click a customer → see everything about them." The 3 collections that are stub-linked (Vehicles, Conversations as a deep list, Appointments) get full first-class rendering in Phase 2.
+The customer profile is **the surface that closes the loop on signal Section 9.1's promise**: "click a customer → see everything about them." The 3 collections that are stub-linked (Vehicles, Conversations as a deep list, Appointments, Leads) get full first-class rendering in Phase 2.
+
+> **Architectural decision · 01 Jun 2026 grooming:** the data root stays at **customer level**, not lead level. Salespeople and service advisors are usually different humans on different leads, but they share one customer. Unifying at customer level keeps the queue + drawer reading as one journey rather than fragmenting by lead. Lead-level views remain a Phase 2 lens on top of the customer record, not a separate root.
 
 ### 9.5 Assign drawer — *Vini-as-assignee with required instructions (v1.1)* · ✅ Phase 1
 
@@ -934,6 +966,17 @@ Slide-in from the right, 500 px wide. Triggered by `Mark closed` / `Close` on an
 - `resolution_type` set
 - Note ≥ 10 chars
 - If `appointment_booked`: appointment is linked (existing) or fully specified (new with datetime)
+
+**Mark as incorrect path *(v3.1, NEW · Phase 1)*** — distinct from Close.
+
+When the closer believes the item is an AI false-positive (wrong intent classification, customer didn't actually say this, duplicate of an existing item, or not a real task) they tap the *"⚠ Mark as incorrect"* link in the drawer footer instead of Close.
+
+- A small modal/inline form drops down inside the drawer with a 5-radio reason picker: `Wrong intent` · `Not a task` · `Customer did not say this` · `Duplicate of existing` · `Other`
+- Optional free-text "What's wrong with this item?" (capped at 240 chars · stored to feed Section 5 eval set)
+- Submit → emits `action_item.marked_incorrect` (Section 10.2) and moves the item to an `incorrect` status (NOT `completed`)
+- Items in `incorrect` status are excluded from closure-rate denominators (Section 2 primary metric). They appear in a new "Incorrect" filter in the Completed view for AI-engineering audit but never count as resolved work.
+
+The path is intentionally a tertiary affordance — not a chip in the main flow — so closers don't lazy-use it instead of writing a real resolution note. Acceptable usage rate at scale: < 3% of total closures. > 5% on any single intent is an AI-quality signal that gets sampled into the next eval-set release.
 
 ### 9.7 Bulk close drawer — *multi-intent customer-level resolution (v1.1, NEW)* · ✅ Phase 1
 
@@ -1077,6 +1120,15 @@ Every event below is emitted to the shared event bus. Both pods consume.
 | **`action_item.created_manually`** *(v3.0 NEW)* | `action_item_id` · `customer_id` · `intent_id` · `creation_source` ∈ `{customer_level, conversation_tagged, note_upgraded}` · `created_by_user_id` · `source_conversation_id?` (when tagged) · `created_at` | BDC adds an action item via the Phase 2 Add-action-item modal (Section 8.2.A.2). Same downstream lifecycle as AI-created items, but `created_by_ai = false` and `creation_source ≠ ai`. |
 | **`action_item.customer_notified`** *(v3.0 NEW)* | `action_item_id` · `customer_id` · `channel` ∈ `{sms, email}` · `template_id` · `branding_mode` ∈ `{co_branded, dealer_branded}` · `dispatched_at` · `delivery_status` ∈ `{queued, delivered, bounced, blocked_dnc, blocked_frequency_cap}` | Phase 2 (Section 8.2.C.2) emits when a templated customer-facing message dispatches as a result of closure. Frequency-cap + DNC checks happen pre-dispatch and feed `delivery_status`. |
 | **`action_item.crm_synced`** *(v3.0 NEW)* | `action_item_id` · `crm_system` ∈ `{reynolds, cdk, dealersocket, vinsolutions, ...}` · `external_record_id?` · `synced_at` · `sync_status` ∈ `{success, retry_scheduled, failed}` · `failure_reason?` | Phase 2 (Section 8.2.C.3) emits when closure data pushes to the dealer's CRM. Retries 3× on failure; final failure surfaces a manual-retry chip in the Completed view. |
+| **`action_item.marked_incorrect`** *(v3.1 NEW · Phase 1)* | `action_item_id` · `customer_id` · `intent_id` · `marked_by_user_id` · `marked_at` · `reason` ∈ `{wrong_intent, not_a_task, customer_did_not_say_this, duplicate_of_existing, other}` · `reason_note?` (free text, optional) | Closer flags an AI false-positive. Item moves to a separate `incorrect` state (not `completed`) so it's **excluded from closure-rate denominators** (Section 2 primary metric definition). Event feeds the AI eval loop in Section 5 — sampled cases enter the next eval-set release for the harness regression. |
+
+#### 10.2.2 Phase 1 conversation-level field addition *(v3.1)*
+
+The conversation entity (Section 10.1) gains one new field that Phase 1 captures and Phase 2 acts on:
+
+| Field | Type | Notes |
+|---|---|---|
+| `transfer_outcome` | enum `none \| warm_transfer \| hard_transfer \| failed_transfer` | Default `none`. Set by Vini's call-handling layer at end-of-call. Phase 1 renders a `Transferred` badge on rows whose source conversation carries a non-`none` value. Phase 2 routing-config (#24) consumes this with the new `auto_close_on_transfer` flag to decide whether the spawned action items auto-close with `resolution_type: transferred_to_human` or stay open for BDC verification. |
 
 #### 10.2.1 Phase 2 event-field additions *(v2.0 — flagged for cross-pod consumers)*
 
@@ -1090,6 +1142,8 @@ The Phase 2 work streams in Section 8.2 introduce new event fields. **Flagged he
 | `vini_closed_with_reasoning` | `action_item.closed` | Section 8.2.2 Vini-as-assignee | Vini's own audit trail: instructions received → action taken → note generated |
 | `auto_closed_reason` | `action_item.closed` | Section 8.2.5 auto-close at 3×SLA | enum: `staleness` / `dnc_inferred` / `customer_unreachable_auto` — distinguishes system auto-close from human close |
 | `rooftop_group_id` | All events | Section 8.2.3 multi-rooftop rollups | Set per-event so group-queue analytics can roll up without joining |
+| `auto_close_on_transfer` *(v3.1 NEW)* | dealer-config record | Section 8.2.A.1 routing-config | Bool, default false. When true and source conversation's `transfer_outcome ∈ {warm_transfer, hard_transfer}`, items auto-close with synthetic `resolution_type: transferred_to_human`. Phase 1 captures `transfer_outcome` on the conversation; Phase 2 wires the auto-close pipeline. |
+| `intent_severity_override` *(v3.1 NEW)* | dealer-config record | Section 8.2.A.1 routing-config | Per-dealer override of the §10.5 default SLA + severity ranking. Lets a high-volume service rooftop redefine which intents are "critical" versus "normal" without forking the global taxonomy. |
 
 **Versioning rule (per Section 10.6 #4):** additive only. Phase 2 fields appear on existing events as optional/nullable. Phase 1 consumers ignore unknown fields by contract.
 

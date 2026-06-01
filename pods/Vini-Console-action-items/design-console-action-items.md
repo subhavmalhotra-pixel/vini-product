@@ -3,9 +3,39 @@
 **Author:** Subhav
 **Product:** Vini
 **Pod / Team:** Vini Product Team
-**Date:** 28 May 2026
-**Status:** Draft v1 — Phase 1 only; Phase 2 surfaces are explicit non-goals, but design contains the **seams** (assignee = Vini chip, manager-rollup placeholder, "Add action" affordance) so Phase 2 can land without re-IA
+**Date:** 01 Jun 2026
+**Status:** Draft v1.1 — incorporates 01 Jun 2026 engineering-grooming transcript + same-week customer feedback. Adds Mark-as-incorrect · multi-item carousel · click-to-next · SLA-burn sort · refreshed RollupStrip · SMS/email timestamp behaviour · Leads as 6th customer collection.
 **Companion artifacts:** [signal-console-action-items.md](./signal-console-action-items.md) · [prd-console-action-items.md](./prd-console-action-items.md) · [icp-console-action-items.md](./icp-console-action-items.md)
+
+---
+
+> **What changed v1 → v1.1 (01 Jun 2026):**
+>
+> Five new design contract affordances added on top of the existing 12. Two existing affordances revised. One IA addition. Sources cited inline.
+>
+> | # | New affordance | Source |
+> |---|---|---|
+> | 13 | **Mark as incorrect** — small "⚠ Incorrect" link in the Close drawer footer (NOT a primary chip). Opens a reason picker · emits `action_item.marked_incorrect` · excludes the item from closure-rate denominators. | Grooming transcript, Ankit & Subhav |
+> | 14 | **Multi-item combined card with horizontal carousel** — when one customer has ≥2 open items, the row expands to one card containing all items as horizontally-scrollable slides (instead of N separate row cards). Bulk-close button at the carousel footer. | Grooming transcript (*"left right scroll करके... card यहां पर बड़ा बना दो"*) |
+> | 15 | **Click-to-next chevron in every drawer** — `‹ prev item · next item ›` cluster in drawer headers so the closer walks a customer's items without bouncing back to the queue. | Grooming transcript (*"click to next होना option"*) |
+> | 16 | **SMS / email source: timestamp-anchored highlight** — for non-call channels, the SourceDrawer scrolls to the timestamped message that created the action item rather than dumping the whole thread. | Customer-call feedback + grooming transcript (*"timestamp logic लगा दो"*) |
+> | 17 | **Leads as the 6th customer-profile collection** — Customer Profile tab strip grows from 5 → 6 (Details · Vehicles · Conversations · Action items · Appointments · **Leads**). Phase 1 stubs the rendering. | Grooming transcript (architectural call) |
+>
+> | # | Revised affordance | Change |
+> |---|---|---|
+> | 1 | **Default sort** | Was `customer wait-time desc`. Now `SLA-burn-ratio desc` (= elapsed / sla_hours), with absolute age as tie-break. Critical-intent items bubble above longer-SLA intents regardless of age. |
+> | 9 | **RollupStrip tile set** | Was 4 tiles: `Open · Oldest · Unassigned · Past SLA`. Now 4 tiles: `Open · Unassigned · Past SLA · Repeat callers`. Oldest demotes to a per-row signal (it's redundant once SLA-burn sort floats the worst case to row #1). |
+>
+> | IA addition | Notes |
+> |---|---|
+> | **Seed data: repeat-caller case** | Prototype seed gains one Gary-Wise-style customer with 3+ contacts in 3 days mapped to a single open action item, so the repeat-caller chip + the new Repeat-callers tile are demoable. |
+>
+> **Phase 2 seams added (build-aware, not built):**
+> - `transfer_outcome` capture on every Conversation + `Transferred` badge on rows whose source has `transfer_outcome ≠ none` (rendered Phase 1; auto-close path Phase 2).
+> - Dealer-config `auto_close_on_transfer` toggle (Phase 2).
+> - Dealer-config per-intent SLA + severity overrides (Phase 2).
+>
+> **Voice copy adjustments:** restored em-dashes in operator-voice strings where the *"N units — consequence"* pattern reads cleanly (per the intelligent-console-design `voice.md`).
 
 ---
 

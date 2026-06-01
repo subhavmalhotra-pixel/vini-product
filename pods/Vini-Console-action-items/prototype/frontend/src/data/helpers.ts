@@ -50,6 +50,21 @@ export function deptOf(item: ActionItem): Dept {
   return INTENT_TAXONOMY[item.intent_id].dept;
 }
 
+/**
+ * SLA-burn ratio · how far through its SLA an item has aged.
+ *   0.0  = just created
+ *   1.0  = exactly at the SLA deadline
+ *   >1.0 = past SLA (overflow grows linearly so the most-breached row stays
+ *          on top even among a cluster of past-SLA items)
+ *
+ * Per PRD §9.2 v3.1 — this is the primary sort key on the Pending view.
+ */
+export function slaBurnRatio(item: ActionItem): number {
+  const intent = INTENT_TAXONOMY[item.intent_id];
+  const slaMins = Math.max(1, intent.sla_hours * 60);
+  return ageMinutes(item) / slaMins;
+}
+
 export function deptColor(dept: Dept): string {
   return INTENTS_BY_DEPT_COLOR[dept] ?? "slate";
 }

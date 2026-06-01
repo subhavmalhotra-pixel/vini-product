@@ -52,6 +52,8 @@ export const ACTION_ITEMS: ActionItem[] = [
 
   // ============= DANIELA RUIZ — multi-intent (pricing + recall) → 2 action items =============
   {
+    // v3.1 — bumped to repeat-caller count so the new Repeat-callers
+    // rollup tile demos correctly + the second case shows alongside Gary.
     action_item_id: "ai-002",
     customer_id: "c-daniela-ruiz",
     source_conversation_id: "conv-daniela-001",
@@ -59,14 +61,14 @@ export const ACTION_ITEMS: ActionItem[] = [
     intent_id: "pricing_quote",
     is_primary_intent_of_source: true,
     intent_recap: "The customer is asking for a lease quote on a 2025 C 300.",
-    created_at: "2026-05-19T11:08:00-07:00",
+    created_at: "2026-05-17T11:08:00-07:00",
     created_by_ai: true,
     status: "pending",
     assignee_user_id: "u-lane",
-    assigned_at: "2026-05-19T11:15:00-07:00",
+    assigned_at: "2026-05-17T11:15:00-07:00",
     assigned_by_user_id: "u-trevor",
-    repeat_caller_count: 0,
-    last_observed_at: "2026-05-19T11:08:00-07:00",
+    repeat_caller_count: 3,
+    last_observed_at: "2026-05-19T09:42:00-07:00",
     surfaced_in_emails: [],
   },
   {

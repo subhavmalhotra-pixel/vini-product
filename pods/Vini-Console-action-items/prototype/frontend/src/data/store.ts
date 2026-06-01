@@ -17,6 +17,7 @@ import {
   type ActionItem,
   type ActionItemStatus,
   type CustomerProfile,
+  type IncorrectReason,
   type IntentId,
   type IntentMeta,
   type ResolutionType,
@@ -331,6 +332,41 @@ export function reopenActionItem(
     reopened_by_user_id: reopenedByUserId,
     reopened_at: NOW_ISO,
     reason,
+  });
+  _notify();
+}
+
+/**
+ * Mark an item as AI false-positive · v3.1 Phase 1.
+ *
+ * Distinct from `closeActionItem`: this path moves the item to status
+ * `incorrect` (NOT `completed`) so it's excluded from closure-rate
+ * denominators. Emits `action_item.marked_incorrect` for the AI eval
+ * loop downstream.
+ */
+export function markActionItemIncorrect(
+  actionItemId: string,
+  reason: IncorrectReason,
+  reasonNote: string | undefined,
+  markedByUserId: string = getCurrentUserId()
+) {
+  const item = _items.find((i) => i.action_item_id === actionItemId);
+  if (!item) return;
+
+  item.status = "incorrect";
+  item.marked_incorrect_at = NOW_ISO;
+  item.marked_incorrect_by_user_id = markedByUserId;
+  item.incorrect_reason = reason;
+  item.incorrect_reason_note = reasonNote?.trim() || undefined;
+
+  _emit("action_item.marked_incorrect", {
+    action_item_id: actionItemId,
+    customer_id: item.customer_id,
+    intent_id: item.intent_id,
+    marked_by_user_id: markedByUserId,
+    marked_at: NOW_ISO,
+    reason,
+    reason_note: item.incorrect_reason_note ?? null,
   });
   _notify();
 }

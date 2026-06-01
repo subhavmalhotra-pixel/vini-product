@@ -4,7 +4,7 @@ import type { ActionItem } from "@test-data";
 import { getActionItems, getCurrentUserId } from "../data/store";
 import { useStore, useCurrentUser } from "../data/useStore";
 import { useActionItemsKeyboard } from "../data/useKeyboard";
-import { ageMinutes, slaState, deptOf } from "../data/helpers";
+import { ageMinutes, slaState, deptOf, slaBurnRatio } from "../data/helpers";
 import { FilterStrip, type PendingFilters } from "../components/FilterStrip";
 import { RollupStrip } from "../components/RollupStrip";
 import { PendingRow } from "../components/PendingRow";
@@ -17,6 +17,7 @@ import { SourceDrawer } from "../components/SourceDrawer";
 import { HelpDrawer } from "../components/HelpDrawer";
 import { InsightsPanel } from "../components/InsightsPanel";
 import { ThreatsOpportunities } from "../components/ThreatsOpportunities";
+import { MarkIncorrectDrawer } from "../components/MarkIncorrectDrawer";
 import { ClipboardListIcon, ClockIcon, CheckIcon } from "../components/Icon";
 
 const ASSIGNMENT_FILTER_KEY = "vini.actionItems.assignmentFilter";
@@ -93,6 +94,7 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
   const [closeItem, setCloseItem] = useState<ActionItem | null>(null);
   const [sourceItem, setSourceItem] = useState<ActionItem | null>(null);
   const [bulkItems, setBulkItems] = useState<ActionItem[] | null>(null);
+  const [incorrectItem, setIncorrectItem] = useState<ActionItem | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
@@ -261,6 +263,7 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
                   onClose={setCloseItem}
                   onListen={setSourceItem}
                   onBulkClose={setBulkItems}
+                  onMarkIncorrect={setIncorrectItem}
                 />
               ))
             )}
@@ -294,6 +297,10 @@ export function ActionItemsPage({ tab }: { tab: "pending" | "completed" }) {
         onOpenSource={setSourceItem}
       />
       <SourceDrawer item={sourceItem} onClose={() => setSourceItem(null)} />
+      <MarkIncorrectDrawer
+        item={incorrectItem}
+        onClose={() => setIncorrectItem(null)}
+      />
       <HelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
@@ -445,10 +452,14 @@ function filterAndSortPending(
     );
   }
 
+  // PRD §9.2 v3.1 — SLA-burn ratio primary, absolute age tie-break, primary
+  // intent tie-break-of-tie-break. Critical-intent items bubble above
+  // longer-SLA items at the same elapsed time.
   out = [...out].sort((a, b) => {
-    const aMins = ageMinutes(a);
-    const bMins = ageMinutes(b);
-    if (aMins !== bMins) return bMins - aMins;
+    const burnDelta = slaBurnRatio(b) - slaBurnRatio(a);
+    if (Math.abs(burnDelta) > 0.001) return burnDelta;
+    const ageDelta = ageMinutes(b) - ageMinutes(a);
+    if (ageDelta !== 0) return ageDelta;
     return (
       (b.is_primary_intent_of_source ? 1 : 0) -
       (a.is_primary_intent_of_source ? 1 : 0)
