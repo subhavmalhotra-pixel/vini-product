@@ -3,6 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { ActionItemsPage } from "./pages/ActionItemsPage";
 import { CustomerProfilePage } from "./pages/CustomerProfilePage";
 import { DocsIndexPage, DocsViewerPage } from "./pages/DocsPage";
+import { ReportingPage } from "./pages/ReportingPage";
 
 export function App() {
   const location = useLocation();
@@ -16,6 +17,7 @@ export function App() {
         <Route path="/action-items/pending" element={<ActionItemsPage tab="pending" />} />
         <Route path="/action-items/completed" element={<ActionItemsPage tab="completed" />} />
         <Route path="/customers/:customerId" element={<CustomerProfilePage />} />
+        <Route path="/reporting" element={<ReportingPage />} />
         <Route path="/docs" element={<DocsIndexPage />} />
         <Route path="/docs/:slug" element={<DocsViewerPage />} />
         <Route path="*" element={<Navigate to="/action-items/pending" replace />} />

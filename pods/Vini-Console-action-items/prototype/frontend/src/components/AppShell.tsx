@@ -155,6 +155,7 @@ type ViniNavItem = {
 function ViniSubNav() {
   const location = useLocation();
   const isActionItems = location.pathname.startsWith("/action-items");
+  const isReporting = location.pathname.startsWith("/reporting");
 
   const items: (ViniNavItem & { active?: boolean })[] = [
     { icon: BarChartIcon, label: "Overview", to: "#" },
@@ -171,7 +172,12 @@ function ViniSubNav() {
     { icon: CalendarIcon, label: "Appointments", to: "#" },
     { icon: MegaphoneIcon, label: "Campaigns", to: "#" },
     { icon: UsersIcon, label: "Customers", to: "#" },
-    { icon: InboxIcon, label: "Reports", to: "#" },
+    {
+      icon: InboxIcon,
+      label: "Reports",
+      to: "/reporting",
+      active: isReporting,
+    },
   ];
 
   return (
