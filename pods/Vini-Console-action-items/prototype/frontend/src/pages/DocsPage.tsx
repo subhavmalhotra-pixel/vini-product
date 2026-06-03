@@ -52,6 +52,14 @@ const DOCS: DocMeta[] = [
     badge: "Design",
     file: "/docs/design-console-action-items.md",
   },
+  {
+    slug: "reporting",
+    title: "Reporting & Analytics — JTBD question set",
+    subtitle:
+      "Customer-backwards reformulation of reporting surface · 4 personas (Agent · BDC Manager · Service Manager · GM) · ~70 questions · data-availability matrix · feeds the Phase 2 reporting PRD.",
+    badge: "Reporting",
+    file: "/docs/reporting-questions-console-action-items.md",
+  },
 ];
 
 export function DocsIndexPage() {
@@ -89,7 +97,9 @@ export function DocsIndexPage() {
                         ? "bg-dept-sales-soft text-dept-sales"
                         : doc.slug === "design"
                           ? "bg-dept-service-soft text-dept-service"
-                          : "bg-brand-purple-soft text-brand-purple"
+                          : doc.slug === "reporting"
+                            ? "bg-status-warning-soft text-status-warning-ink"
+                            : "bg-brand-purple-soft text-brand-purple"
                 }`}
               >
                 {doc.slug === "signal" ? (
@@ -200,7 +210,9 @@ export function DocsViewerPage() {
                   ? "bg-dept-sales-soft text-dept-sales"
                   : doc.slug === "design"
                     ? "bg-dept-service-soft text-dept-service"
-                    : "bg-brand-purple-soft text-brand-purple"
+                    : doc.slug === "reporting"
+                      ? "bg-status-warning-soft text-status-warning-ink"
+                      : "bg-brand-purple-soft text-brand-purple"
           }`}
         >
           {doc.badge}
