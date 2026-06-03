@@ -60,6 +60,22 @@ const DOCS: DocMeta[] = [
     badge: "Reporting",
     file: "/docs/reporting-questions-console-action-items.md",
   },
+  {
+    slug: "signal-reporting",
+    title: "Reporting · Customer Signal",
+    subtitle:
+      "Reporting workstream signal · 8 verbatims · BDC Manager + GM + Service Manager voices · why-now · phased rollout. Sibling to the /reporting prototype.",
+    badge: "Signal",
+    file: "/docs/signal-console-reporting.md",
+  },
+  {
+    slug: "requirement-reporting",
+    title: "Reporting · V1 Requirement (one-pager)",
+    subtitle:
+      "Short, scannable spec · Norman's two-gulfs + Hook loop + UX heuristics applied · 8 acceptance criteria · 5 open questions · what V1 ships, what V2 unblocks.",
+    badge: "Requirement",
+    file: "/docs/requirement-console-reporting.md",
+  },
 ];
 
 export function DocsIndexPage() {
@@ -89,7 +105,7 @@ export function DocsIndexPage() {
             <div className="flex min-w-0 items-start gap-3">
               <span
                 className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md ${
-                  doc.slug === "signal"
+                  doc.slug === "signal" || doc.slug === "signal-reporting"
                     ? "bg-status-ok-soft text-status-ok"
                     : doc.slug === "prd-grooming"
                       ? "bg-status-warning-soft text-status-warning"
@@ -97,7 +113,7 @@ export function DocsIndexPage() {
                         ? "bg-dept-sales-soft text-dept-sales"
                         : doc.slug === "design"
                           ? "bg-dept-service-soft text-dept-service"
-                          : doc.slug === "reporting"
+                          : doc.slug === "reporting" || doc.slug === "requirement-reporting"
                             ? "bg-status-warning-soft text-status-warning-ink"
                             : "bg-brand-purple-soft text-brand-purple"
                 }`}
@@ -202,7 +218,7 @@ export function DocsViewerPage() {
       <div className="mt-3">
         <span
           className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-            doc.slug === "signal"
+            doc.slug === "signal" || doc.slug === "signal-reporting"
               ? "bg-status-ok-soft text-status-ok"
               : doc.slug === "prd-grooming"
                 ? "bg-status-warning-soft text-status-warning"
@@ -210,7 +226,7 @@ export function DocsViewerPage() {
                   ? "bg-dept-sales-soft text-dept-sales"
                   : doc.slug === "design"
                     ? "bg-dept-service-soft text-dept-service"
-                    : doc.slug === "reporting"
+                    : doc.slug === "reporting" || doc.slug === "requirement-reporting"
                       ? "bg-status-warning-soft text-status-warning-ink"
                       : "bg-brand-purple-soft text-brand-purple"
           }`}
