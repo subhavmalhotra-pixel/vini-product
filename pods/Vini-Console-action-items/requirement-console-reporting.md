@@ -132,6 +132,112 @@ This is the framework that drove the V1 layout decisions.
 
 ---
 
+## Question · Priority · Metric · Visual mapping
+
+The build-spec table. Every row maps one persona-level question (from the [reporting-questions JTBD doc](./reporting-questions-console-action-items.md)) to its priority, its computed metric, and the canonical visual primitive that renders it. **All P0 rows ship in V1.** P1 rows ship in V2 once instrumentation lands.
+
+Total: **53 questions · 32 P0 · 21 P1** · 11 widget primitives across all of them.
+
+### 🤖 Agent performance (Mia · service inbound)
+
+| # | Question | Priority | Metric | Visual |
+|:--:|---|:--:|---|---|
+| 1 | Total calls handled this period | **P0** | `COUNT(conversations WHERE agent=mia AND date IN window)` | KPI card · value · vs-target chip · WoW sparkline |
+| 2 | Funnel · Calls → Interacted → Qualified → Booked → Showed | **P0** | Stage-to-stage % conversion + drop-off count | Funnel chart · 5 stages · hover drop-off |
+| 3 | Call & intent flow routing | **P0** | Conversation routing across stages | Sankey diagram *(already live · keep)* |
+| 4 | Vini fully handled vs routed to human | **P0** | `% conversations WHERE outcome IN {resolved_in_conversation}` vs `{transferred, hitl_*}` | Stacked horizontal bar · 2 segments · centre label |
+| 5 | When did customers reach out (time of day · channel) | **P0** | `COUNT GROUP BY HOUR(started_at), channel` | Heatmap 24h × channel OR stacked bar by hour |
+| 6 | Top intents on calls | **P0** | `COUNT GROUP BY primary_intent_id ORDER BY DESC LIMIT 10` | Horizontal bar top-10 · % of total |
+| 7 | Top services requested but not booked | **P0** | Intent count − appointment count grouped by intent | Side-by-side bar (requested vs booked) per intent |
+| 8 | Avg daily appointments · total vs Vini-booked | **P0** | `appointments / days` total + filtered by `created_by_user_id = vini_agent` | Dual-line chart OR stacked area |
+| 9 | Customer sentiment per conversation | **P1** | `AVG(sentiment_score)` + distribution histogram | Donut for sentiment buckets + drilldown |
+| 10 | Dropped calls · no-intent · abandonment | **P1** | `COUNT WHERE outcome IN {abandoned, no_intent}` | KPI card + small breakdown bar |
+| 11 | Leads from channels where Vini is NOT deployed | **P1** | Appointments grouped by `source` where `source NOT IN vini_deployed_channels` | Pie/donut for channel mix highlighting non-Vini slice |
+
+### 🧑‍💼 BDC Manager — Anya / Trevor
+
+| # | Question | Priority | Metric | Visual |
+|:--:|---|:--:|---|---|
+| 12 | Open action items per rep right now | **P0** | `COUNT(action_items WHERE status=pending) GROUP BY assignee_user_id` | Horizontal bar per rep · sorted desc · median line overlay |
+| 13 | Queue growing or draining week-over-week | **P0** | `created_count − closed_count` per day | Diverging bar (created vs closed) with net delta |
+| 14 | SLA-burn distribution across the team | **P0** | Histogram of `slaBurnRatio` bucketed `<25 / 25-50 / 50-75 / 75-100 / past` | Stacked horizontal bar color-coded green→amber→red |
+| 15 | Closure rate per rep this week vs last | **P0** | `closed / (closed + still_pending_assigned)` per rep, period-over-period | Grouped bar (this week, last week) + delta arrow |
+| 16 | Median time-to-close by rep | **P0** | `MEDIAN(closed_at − assigned_at) GROUP BY closed_by_user_id` | Box plot OR horizontal bar with coaching threshold |
+| 17 | Mark-as-incorrect rate by rep AND by intent | **P0** | `marked_incorrect_count / (closed + marked_incorrect) × 100` | Bar chart per rep · threshold 3% acceptable · 5% eval-loop trigger |
+| 18 | Repeat-caller rate this week (3+ pings) | **P0** | `COUNT(DISTINCT customer_id WHERE repeat_caller_count ≥ 3)` | KPI card · sparkline · drill table |
+| 19 | Vini handled vs routed (team-wide) | **P0** | Same as Agent #4, team-rollup | Stacked horizontal bar |
+| 20 | Workload overload risk (items per rep > 2× team median) | **P0** | Workload index = `rep_open / team_median` | Same bar as #12 with overload threshold band shaded red |
+| 21 | Peak hour staffing gap | **P1** | `call_volume_at_hour / staff_at_hour` heatmap | Heatmap hour × day-of-week (capacity utilisation) |
+| 22 | Resolution-note quality per rep | **P1** | `AVG(LENGTH(resolution_note))` per rep + skipped-rate | Bar with note-skipped rate overlay OR sampled-review tag |
+| 23 | Auto-escalation count today (Phase 2) | **P1** | `COUNT(action_item.nudged events)` | KPI card + sparkline |
+| 24 | Negative sentiment rate per conversation | **P1** | `% conversations WHERE sentiment_score < threshold` | Sparkline with threshold line + drilldown |
+| 25 | Customers auto-notified on closure (Phase 2) | **P1** | `COUNT(action_item.customer_notified) / COUNT(action_item.closed)` | KPI gauge |
+
+### 🔧 Service Manager — Priya / Anya (service lens)
+
+| # | Question | Priority | Metric | Visual |
+|:--:|---|:--:|---|---|
+| 26 | Service intent mix this week | **P0** | `COUNT GROUP BY intent_id WHERE dept=service` | Donut chart · max 5 slices |
+| 27 | Service appointments · Vini-booked vs advisor-booked | **P0** | `COUNT(appointments) GROUP BY created_by_user_id IS vini` | Stacked bar over time (WoW) |
+| 28 | Top services requested vs booked | **P0** | Intent count − appointment count per service intent | Side-by-side horizontal bar per service |
+| 29 | Warm transfers initiated · succeeded vs failed | **P0** | `COUNT GROUP BY transfer_outcome` (none/warm/hard/failed) | Funnel (initiated → succeeded → outcome) OR stacked bar |
+| 30 | Repeat-caller rate on `status_update` intents | **P0** | `COUNT WHERE intent=status_update AND repeat_caller_count ≥ 3` | KPI card + sparkline |
+| 31 | Recall-response SLA compliance (2-hour ack) | **P0** | `% recall_response items closed within 2h` | Gauge / threshold ring |
+| 32 | What % of service appointments showed up | **P1** | `% appointments WHERE status=shown` | KPI gauge + by-source breakdown bar |
+| 33 | No-show rate by appointment source | **P1** | `% no_show GROUP BY appointment_source` | Grouped bar per source with red-zone band |
+| 34 | After-hours service demand (7 PM – 7 AM) | **P1** | `COUNT WHERE hour BETWEEN [19, 7] GROUP BY hour` | Vertical bar by hour · after-hours zone shaded |
+| 35 | Opcode-match miss (we offer but Vini routed away) | **P1** | Needs opcode-map taxonomy — Vini-service-objection-handling sister pod | Bar of detected mismatches per opcode (Phase 2) |
+| 36 | Median advisor pickup time on transferred calls | **P1** | `MEDIAN(advisor_picked_up_at − transfer_initiated_at)` | Box plot per advisor OR sortable table |
+| 37 | Recall-eligible customers flagged vs missed | **P1** | Join `Conversation.customer_id` with recall-DB | KPI card "flagged / total" + drilldown list |
+| 38 | Top non-mechanical service requests (cross-dept transferred) | **P1** | Cross-dept transfer events grouped by request type | Horizontal bar (glass · upholstery · key fob etc.) |
+
+### 🏢 GM / Dealer Principal — Edgar
+
+| # | Question | Priority | Metric | Visual |
+|:--:|---|:--:|---|---|
+| 39 | Revenue attributable to Vini-booked appointments | **P0** | `SUM(revenue) WHERE source_action_item.created_by_user_id = vini_agent` | Big KPI · $ value · MoM delta · sparkline |
+| 40 | % inbound calls → appointments | **P0** | `COUNT(appointments_booked) / COUNT(conversations) × 100` | KPI card with funnel preview |
+| 41 | Vini handle rate (full resolution vs routed) | **P0** | Same as BDC Mgr #19 | Stacked horizontal bar (rooftop-wide) |
+| 42 | Customer experience snapshot (3 signals) | **P0** | sentiment % · repeat-caller count · time-to-resolution median | 3-KPI strip with deltas |
+| 43 | Headcount efficiency · calls per BDC FTE | **P0** | `total_calls / FTE_count` (FTE entered at onboarding) | KPI card · pre-Vini vs current bars |
+| 44 | Calls captured after-hours / on weekends | **P0** | `COUNT(conversations WHERE hour NOT IN business_hours)` | Stacked area · in-hours vs after-hours over time |
+| 45 | Funnel leakage · calls → qualified → appt → showed → close | **P0** | Same as Agent #2 rolled up + manual closures | Multi-stage funnel with leakage call-outs |
+| 46 | DNC / TCPA compliance rate | **P0** | `COUNT(compliance violations) / COUNT(conversations) × 100` (target 0) | KPI card · red glow if > 0 · audit trail link |
+| 47 | Cross-rooftop benchmark (Phase 2 group) | **P0*** | Per-rooftop rollup of #40 + #43 + #42 | Leaderboard table · sortable columns |
+| 48 | Where in the funnel are we leaking · qualified-but-not-booked | **P1** | Drop-off count per stage | Sankey diagram exec-summary level |
+| 49 | Marketing campaign drove the calls that booked | **P1** | Join `conversations.source_campaign` with appointment book rate | Stacked bar by campaign + conversion overlay |
+| 50 | Cost per appointment by source | **P1** | `total_cost_per_source / appointments_per_source` | Bar chart with cost per source + benchmark line |
+| 51 | Cross-department leakage · service customer with sales interest | **P1** | Customers with intents in both `service` and `sales` dept | Table with action — "cross-sell follow-up suggested" |
+| 52 | Recall slipped past unflagged | **P1** | Same as Svc Mgr #37 rooftop-wide | KPI + audit drilldown |
+| 53 | "Can I redeploy one FTE to higher-value work?" | **P1** | Narrative analysis combining #43 + #44 | Decision panel with recommendations · no chart |
+
+\* *#47 is P0 only for the Phase 2 group-level PRD. Single-rooftop GMs see P0 #39–#46 in V1.*
+
+---
+
+## Widget primitive count (build economy)
+
+Across all 53 questions, the 11 reusable widget primitives consolidate as:
+
+| Widget primitive | # of questions it covers | Status |
+|---|:---:|:---:|
+| KpiCard (icon + 28px tabular + delta + target + sparkline) | 16 | ✅ live |
+| HorizontalBar (with optional threshold) | 9 | ✅ live |
+| ComparisonBar (side-by-side `Vini vs human` / `requested vs booked`) | 7 | ✅ live |
+| StackedBar (segments + legend) | 7 | ✅ live |
+| Funnel (cascading bars with drop-off) | 4 | ✅ live |
+| Sparkline (inline SVG, embedded in KpiCard) | 5 | ✅ live |
+| Heatmap (hour × day intensity grid) | 3 | ✅ live |
+| Donut (max 5 slices · centre label) | 2 | ✅ live |
+| Gauge (semi-circle threshold ring) | 2 | ✅ live |
+| Sankey diagram (call/intent flow) | 2 | ⚠️ existing in agent dashboard · port to /reporting |
+| LeaderboardTable | 7 | ✅ live |
+| Custom one-offs (QueueDelta, HeadcountEfficiency) | 2 | ✅ live |
+
+**Headline: every P0 primitive is already deployed in the live `/reporting` page.** The remaining V1 build work is wiring + data — not new widgets.
+
+---
+
 ## Data dependencies (what V1 reads · what V2 needs)
 
 | Dependency | Status | Source |
