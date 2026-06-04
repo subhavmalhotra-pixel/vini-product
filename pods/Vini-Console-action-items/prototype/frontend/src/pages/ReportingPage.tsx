@@ -7,8 +7,12 @@ import {
   Gauge,
   Heatmap,
   HorizontalBar,
+  IncrementalCaptureCard,
   KpiCard,
   LeaderboardTable,
+  ParityComparisonRow,
+  QbrSummaryCard,
+  RenewalReadinessHero,
   SectionHeader,
   Sparkline,
   StackedBar,
@@ -16,14 +20,16 @@ import {
 import {
   AGENT_DATA,
   BDC_MANAGER_DATA,
+  FIRST_30_DAYS_DATA,
   GM_DATA,
   SERVICE_MANAGER_DATA,
 } from "../components/reporting/mockData";
 import { MaterialSymbol } from "../components/MaterialSymbol";
 
-type Persona = "agent" | "bdc" | "service" | "gm";
+type Persona = "first30" | "agent" | "bdc" | "service" | "gm";
 
 const PERSONAS: { key: Persona; label: string; icon: string; sub: string }[] = [
+  { key: "first30", label: "First 30 days", icon: "rocket_launch", sub: "Activation · renewal-risk lens" },
   { key: "agent", label: "Agent performance", icon: "support_agent", sub: "Mia · service inbound" },
   { key: "bdc", label: "BDC Manager", icon: "groups", sub: "Team-level rollup" },
   { key: "service", label: "Service Manager", icon: "build", sub: "Bay throughput · recalls" },
@@ -33,7 +39,7 @@ const PERSONAS: { key: Persona; label: string; icon: string; sub: string }[] = [
 const WINDOWS = ["Today", "Yesterday", "Last 7 days", "Last 30 days"];
 
 export function ReportingPage() {
-  const [persona, setPersona] = useState<Persona>("agent");
+  const [persona, setPersona] = useState<Persona>("first30");
   const [windowSel, setWindowSel] = useState("Last 30 days");
 
   return (
@@ -117,11 +123,99 @@ export function ReportingPage() {
 
       {/* Body */}
       <div className="px-7 py-7">
+        {persona === "first30" ? <First30DaysTab /> : null}
         {persona === "agent" ? <AgentTab /> : null}
         {persona === "bdc" ? <BDCManagerTab /> : null}
         {persona === "service" ? <ServiceManagerTab /> : null}
         {persona === "gm" ? <GMTab /> : null}
       </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Tab · First 30 days · activation-window renewal-risk lens
+   ============================================================ */
+function First30DaysTab() {
+  const d = FIRST_30_DAYS_DATA;
+  return (
+    <div className="space-y-8">
+      {/* Renewal readiness hero */}
+      <RenewalReadinessHero
+        daysSinceGoLive={d.daysSinceGoLive}
+        parityScore={d.readiness.parityScore}
+        incrementalValueUsd={d.readiness.incrementalValueUsd}
+        status={d.readiness.status}
+        headline={d.readiness.headline}
+      />
+
+      {/* Section 1: Parity · Q1 "Is AI doing what humans used to do?" */}
+      <section>
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-status-ok-soft text-status-ok">
+            <MaterialSymbol name="balance" size={16} />
+          </span>
+          <div>
+            <div className="text-meta-label text-text-tertiary">Question 1</div>
+            <h2 className="text-section-h2 text-text-primary">
+              Is Vini doing what your BDC used to do?
+            </h2>
+          </div>
+        </div>
+        <p className="mb-4 text-section-desc text-text-secondary">
+          Side-by-side · pre-Vini human BDC baseline vs Vini today. Every metric
+          must be at or above your pre-Vini number before we earn your renewal.
+        </p>
+        <div className="rounded-lg border border-border-subtle bg-surface-card px-5 py-1">
+          {d.parity.map((row) => (
+            <ParityComparisonRow
+              key={row.metric}
+              metric={row.metric}
+              baseline={row.baseline}
+              current={row.current}
+              polarity={row.polarity}
+              deltaLabel={row.deltaLabel}
+              status={row.status}
+              explainer={row.explainer}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Section 2: Incremental · Q2 "What was AI catching that humans missed?" */}
+      <section>
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-purple-soft text-brand-purple">
+            <MaterialSymbol name="trending_up" size={16} />
+          </span>
+          <div>
+            <div className="text-meta-label text-text-tertiary">Question 2</div>
+            <h2 className="text-section-h2 text-text-primary">
+              What is Vini catching that your BDC was missing?
+            </h2>
+          </div>
+        </div>
+        <p className="mb-4 text-section-desc text-text-secondary">
+          Net-new revenue and customer outcomes Vini captured this period that
+          your prior BDC could not. This is the value above-and-beyond parity.
+        </p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {d.incremental.map((card) => (
+            <IncrementalCaptureCard
+              key={card.label}
+              icon={card.icon}
+              label={card.label}
+              captured={card.captured}
+              preViniOutcome={card.preViniOutcome}
+              valueLine={card.valueLine}
+              tone={card.tone}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* QBR summary · pre-formatted bullets the GM can copy */}
+      <QbrSummaryCard bullets={d.qbrSummary.bullets} />
     </div>
   );
 }

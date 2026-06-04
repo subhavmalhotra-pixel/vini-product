@@ -757,3 +757,308 @@ export function SectionHeader({
     </div>
   );
 }
+
+/* ============================================================
+   13. RenewalReadinessHero · top of the First-30-days tab
+   ============================================================ */
+export function RenewalReadinessHero({
+  daysSinceGoLive,
+  parityScore,
+  incrementalValueUsd,
+  status,
+  headline,
+}: {
+  daysSinceGoLive: number;
+  parityScore: number;
+  incrementalValueUsd: number;
+  status: "on-track" | "watch" | "off-track";
+  headline: string;
+}) {
+  const STATUS_BG = {
+    "on-track": "bg-status-ok-soft",
+    watch: "bg-status-warning-soft",
+    "off-track": "bg-status-past-soft",
+  } as const;
+  const STATUS_TEXT = {
+    "on-track": "text-status-ok",
+    watch: "text-status-warning-ink",
+    "off-track": "text-status-past",
+  } as const;
+  const STATUS_LABEL = {
+    "on-track": "On track to renewal",
+    watch: "Watch · prep for QBR",
+    "off-track": "Off track · escalate",
+  } as const;
+  return (
+    <div className="rounded-lg border border-border-subtle bg-surface-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_BG[status]} ${STATUS_TEXT[status]}`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              status === "on-track"
+                ? "bg-status-ok"
+                : status === "watch"
+                ? "bg-status-warning"
+                : "bg-status-past"
+            }`}
+          />
+          {STATUS_LABEL[status]}
+        </span>
+        <span className="text-meta-label text-text-tertiary tabular">
+          Day {daysSinceGoLive} of 30 · activation window
+        </span>
+      </div>
+      <p className="mt-3 text-[15px] leading-snug text-text-primary">
+        {headline}
+      </p>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <div className="text-meta-label text-text-secondary">
+            Parity score · vs pre-Vini baseline
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-display text-text-primary">
+              {parityScore}%
+            </span>
+            <span className="text-meta text-text-tertiary">
+              of pre-Vini human BDC performance
+            </span>
+          </div>
+        </div>
+        <div>
+          <div className="text-meta-label text-text-secondary">
+            Incremental value captured
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-display text-status-ok">
+              ${(incrementalValueUsd / 1000).toFixed(1)}K
+            </span>
+            <span className="text-meta text-text-tertiary">
+              revenue your BDC was missing
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   14. ParityComparisonRow · baseline | current with delta + status
+   ============================================================ */
+export function ParityComparisonRow({
+  metric,
+  baseline,
+  current,
+  polarity,
+  deltaLabel,
+  status,
+  explainer,
+}: {
+  metric: string;
+  baseline: { value: number; label: string; helper: string };
+  current: { value: number; label: string; helper: string };
+  polarity: "higher-is-better" | "lower-is-better";
+  deltaLabel: string;
+  status: "on-track" | "watch" | "off-track";
+  explainer: string;
+}) {
+  const max =
+    polarity === "higher-is-better"
+      ? Math.max(baseline.value, current.value, 1)
+      : Math.max(baseline.value, current.value, 1);
+  const baselinePct = (baseline.value / max) * 100;
+  const currentPct = (current.value / max) * 100;
+  const STATUS_BG = {
+    "on-track": "bg-status-ok-soft",
+    watch: "bg-status-warning-soft",
+    "off-track": "bg-status-past-soft",
+  } as const;
+  const STATUS_TEXT = {
+    "on-track": "text-status-ok",
+    watch: "text-status-warning-ink",
+    "off-track": "text-status-past",
+  } as const;
+  return (
+    <div className="border-b border-border-subtle py-4 last:border-0">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-card-title text-text-primary">{metric}</span>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tabular ${STATUS_BG[status]} ${STATUS_TEXT[status]}`}
+        >
+          {deltaLabel}
+        </span>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+        <ParityBar
+          label="Pre-Vini baseline"
+          value={baseline.label}
+          helper={baseline.helper}
+          pct={baselinePct}
+          tone="neutral"
+        />
+        <ParityBar
+          label="Current · Vini"
+          value={current.label}
+          helper={current.helper}
+          pct={currentPct}
+          tone={status === "on-track" ? "good" : status === "watch" ? "warn" : "bad"}
+        />
+      </div>
+      <p className="mt-2 text-[12px] leading-snug text-text-secondary">
+        {explainer}
+      </p>
+    </div>
+  );
+}
+
+function ParityBar({
+  label,
+  value,
+  helper,
+  pct,
+  tone,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  pct: number;
+  tone: "good" | "warn" | "bad" | "neutral";
+}) {
+  const fill =
+    tone === "good"
+      ? "bg-status-ok"
+      : tone === "warn"
+      ? "bg-status-warning"
+      : tone === "bad"
+      ? "bg-status-past"
+      : "bg-text-tertiary";
+  const valColor =
+    tone === "good"
+      ? "text-status-ok"
+      : tone === "neutral"
+      ? "text-text-secondary"
+      : "text-text-primary";
+  return (
+    <div className="rounded-md border border-border-subtle bg-surface-card px-3 py-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
+          {label}
+        </span>
+        <span className={`tabular text-[14px] font-semibold ${valColor}`}>
+          {value}
+        </span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-subtle">
+        <div className={`h-full ${fill}`} style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-1 text-[10px] leading-snug text-text-tertiary">{helper}</p>
+    </div>
+  );
+}
+
+/* ============================================================
+   15. IncrementalCaptureCard · "captured / would-have-missed"
+   ============================================================ */
+export function IncrementalCaptureCard({
+  icon,
+  label,
+  captured,
+  preViniOutcome,
+  valueLine,
+  tone = "positive",
+}: {
+  icon: string;
+  label: string;
+  captured: number;
+  preViniOutcome: string;
+  valueLine: string;
+  tone?: "positive" | "warning" | "neutral";
+}) {
+  const iconClass =
+    tone === "positive"
+      ? "bg-status-ok-soft text-status-ok"
+      : tone === "warning"
+      ? "bg-status-warning-soft text-status-warning-ink"
+      : "bg-surface-subtle text-text-secondary";
+  const valueClass =
+    tone === "positive" ? "text-status-ok" : "text-text-primary";
+  // Lazy import to avoid a circular reference in the file order
+  return (
+    <div className="flex h-full flex-col rounded-lg border border-border-subtle bg-surface-card px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span
+          className={`flex h-7 w-7 items-center justify-center rounded-md ${iconClass}`}
+        >
+          <IconFromName name={icon} />
+        </span>
+        <span className="text-card-title text-text-primary">{label}</span>
+      </div>
+      <div className={`mt-3 text-display ${valueClass}`}>
+        {captured.toLocaleString()}
+      </div>
+      <p className="mt-1.5 text-[11px] leading-snug text-text-tertiary">
+        Pre-Vini · {preViniOutcome}.
+      </p>
+      <p className="mt-1.5 text-[12px] leading-snug text-text-secondary">
+        {valueLine}
+      </p>
+    </div>
+  );
+}
+
+function IconFromName({ name }: { name: string }) {
+  // Use Material Symbols Outlined (per locked iconography rule)
+  return (
+    <span
+      className="material-symbols-outlined"
+      style={{
+        fontSize: 16,
+        fontVariationSettings: "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20",
+      }}
+      aria-hidden
+    >
+      {name}
+    </span>
+  );
+}
+
+/* ============================================================
+   16. QBR summary card · pre-formatted bullets for "show your GM"
+   ============================================================ */
+export function QbrSummaryCard({
+  bullets,
+}: {
+  bullets: string[];
+}) {
+  return (
+    <div className="rounded-lg border border-border-subtle bg-surface-card p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-section-h2 text-text-primary">
+          Show this to your GM at the next QBR
+        </h3>
+        <button
+          type="button"
+          disabled
+          title="Copy + Email export ships in V2"
+          className="cursor-not-allowed rounded-md border border-dashed border-border-strong/70 bg-transparent px-2.5 py-1.5 text-[12px] font-medium text-text-tertiary"
+        >
+          Copy summary · soon
+        </button>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {bullets.map((b, i) => (
+          <li
+            key={i}
+            className="flex gap-2.5 text-[13px] leading-relaxed text-text-primary"
+          >
+            <span className="mt-1.5 inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-status-ok" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

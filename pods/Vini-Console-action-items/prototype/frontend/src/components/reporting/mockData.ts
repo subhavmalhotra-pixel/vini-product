@@ -364,3 +364,154 @@ export const GM_DATA = {
     },
   ],
 };
+
+/* ============================================================
+   First 30 days · activation-window renewal-risk lens
+   Anchored to the signal that dealerships churn within 0-90
+   days; stickiness only kicks in after they see proof that Vini
+   is (1) matching pre-Vini human BDC + (2) catching what BDC
+   couldn't.
+   ============================================================ */
+export const FIRST_30_DAYS_DATA = {
+  // Days since go-live · drives the "Day X of 30" countdown
+  daysSinceGoLive: 23,
+  goLiveDate: "10 May 2026",
+  rooftop: "MB Laguna Niguel",
+
+  // Renewal-readiness summary
+  readiness: {
+    parityScore: 96, // % · weighted average of parity metrics vs pre-Vini baseline
+    incrementalValueUsd: 42800, // captured net-new revenue this period
+    status: "on-track" as const, // on-track / watch / off-track
+    headline: "On track to renewal · Vini is at or above your pre-Vini baseline on every metric, and has captured $42.8K in revenue your BDC was missing.",
+  },
+
+  // ============================================
+  // PARITY · Q1 "Is AI doing what humans used to do?"
+  // ============================================
+  // Each row: baseline = pre-Vini human BDC (90 days before go-live)
+  //           current  = Vini-handled equivalent (this period)
+  //           polarity = which direction is "better"
+  parity: [
+    {
+      metric: "Calls answered (in-hours)",
+      baseline: { value: 92, label: "92%", helper: "Pre-Vini BDC · last 90 days" },
+      current: { value: 99, label: "99%", helper: "Vini · last 23 days" },
+      polarity: "higher-is-better" as const,
+      deltaLabel: "+7 pts",
+      status: "on-track" as const,
+      explainer: "Vini answers calls Vini's BDC missed when reps were on other lines or off-shift.",
+    },
+    {
+      metric: "Avg first-response time",
+      baseline: { value: 494, label: "8m 14s", helper: "Pre-Vini · median call pickup + first SMS reply" },
+      current: { value: 42, label: "42s", helper: "Vini · median across channels" },
+      polarity: "lower-is-better" as const,
+      deltaLabel: "−92%",
+      status: "on-track" as const,
+      explainer: "Vini responds 11× faster than your BDC did. First-touch latency is the #1 conversion driver.",
+    },
+    {
+      metric: "Appointment booking rate",
+      baseline: { value: 22, label: "22%", helper: "Pre-Vini · calls→appts on inbound" },
+      current: { value: 28, label: "28%", helper: "Vini · same denominator" },
+      polarity: "higher-is-better" as const,
+      deltaLabel: "+6 pts",
+      status: "on-track" as const,
+      explainer: "Vini converts at +6 pts vs your prior BDC. Per-call lift = $87 in expected revenue.",
+    },
+    {
+      metric: "Resolution rate (no human escalation)",
+      baseline: { value: 58, label: "58%", helper: "Pre-Vini · % of calls closed without transfer" },
+      current: { value: 78, label: "78%", helper: "Vini · same definition" },
+      polarity: "higher-is-better" as const,
+      deltaLabel: "+20 pts",
+      status: "on-track" as const,
+      explainer: "Vini fully resolves 78% of calls in-conversation. Your BDC managed 58% pre-Vini.",
+    },
+    {
+      metric: "Voicemail-to-callback rate",
+      baseline: { value: 41, label: "41%", helper: "Pre-Vini · voicemails followed up within 24h" },
+      current: { value: 100, label: "100%", helper: "Vini · handles every inbound inline" },
+      polarity: "higher-is-better" as const,
+      deltaLabel: "+59 pts",
+      status: "on-track" as const,
+      explainer: "Vini answers every call. No voicemails dropped. Pre-Vini, 59% of voicemails never got a callback within 24h.",
+    },
+    {
+      metric: "Recall-response SLA (2h ack)",
+      baseline: { value: 4 * 60, label: "4h 00m", helper: "Pre-Vini · median time to ack recall calls" },
+      current: { value: 110, label: "1h 50m", helper: "Vini · median time to ack" },
+      polarity: "lower-is-better" as const,
+      deltaLabel: "−54%",
+      status: "on-track" as const,
+      explainer: "Recall acks land in under 2h vs the 4h pre-Vini median. Compliance audit-ready.",
+    },
+  ],
+
+  // ============================================
+  // INCREMENTAL · Q2 "What was AI catching that humans missed?"
+  // ============================================
+  // Each card: captured this period, was being missed pre-Vini
+  incremental: [
+    {
+      icon: "nights_stay",
+      label: "After-hours calls captured",
+      captured: 1210,
+      preViniOutcome: "All would have hit voicemail",
+      valueLine: "16% lift in inbound capture · $18.4K attributable revenue",
+      tone: "positive" as const,
+    },
+    {
+      icon: "weekend",
+      label: "Weekend calls (Sat / Sun)",
+      captured: 380,
+      preViniOutcome: "BDC closed weekends → voicemail",
+      valueLine: "12% lift in weekly capture · $5.2K attributable revenue",
+      tone: "positive" as const,
+    },
+    {
+      icon: "autorenew",
+      label: "Repeat-caller saves",
+      captured: 23,
+      preViniOutcome: "Customers who pinged 3+ times pre-Vini · churn risk",
+      valueLine: "23 retention wins · ~$11.5K LTV protected",
+      tone: "positive" as const,
+    },
+    {
+      icon: "health_and_safety",
+      label: "Recall-eligible flagged",
+      captured: 67,
+      preViniOutcome: "BDC didn't cross-check VIN against recall DB",
+      valueLine: "67 safety-critical follow-ups · compliance + service revenue",
+      tone: "positive" as const,
+    },
+    {
+      icon: "swap_horiz",
+      label: "Cross-dept handoffs preserved",
+      captured: 124,
+      preViniOutcome: "BDC dropped the handoff at end of shift",
+      valueLine: "124 customers warm-transferred · $5.8K service-bay revenue",
+      tone: "positive" as const,
+    },
+    {
+      icon: "ring_volume",
+      label: "Lost-conversation recovery",
+      captured: 42,
+      preViniOutcome: "Customer hung up · no follow-up touched them",
+      valueLine: "42 re-engagement attempts · 18 converted to appointments",
+      tone: "positive" as const,
+    },
+  ],
+
+  // QBR summary · pre-formatted for the "Show your GM" export
+  qbrSummary: {
+    bullets: [
+      "Vini matches or beats your pre-Vini BDC on every parity metric.",
+      "$42.8K in incremental revenue Vini captured this period that your BDC would have missed.",
+      "1,210 after-hours calls answered · pre-Vini these were voicemail.",
+      "67 recall-eligible customers flagged · safety + service revenue.",
+      "23 repeat-caller saves · ~$11.5K LTV protected.",
+    ],
+  },
+};
