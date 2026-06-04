@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ALL_DAILY_SCENARIOS,
   ALL_EOC_SCENARIOS,
@@ -18,6 +18,12 @@ import { MonthlyValueReport } from "./emails/MonthlyValueReport";
 import { EndOfCampaignReport } from "./emails/EndOfCampaignReport";
 import { PostCallSummary } from "./emails/PostCallSummary";
 
+import { DailyDigest as LegacyDailyDigest } from "./emails/legacy/DailyDigest";
+import { WeeklyPerformance as LegacyWeeklyPerformance } from "./emails/legacy/WeeklyPerformance";
+import { MonthlyValueReport as LegacyMonthlyValueReport } from "./emails/legacy/MonthlyValueReport";
+import { EndOfCampaignReport as LegacyEndOfCampaignReport } from "./emails/legacy/EndOfCampaignReport";
+import { PostCallSummary as LegacyPostCallSummary } from "./emails/legacy/PostCallSummary";
+
 const ALL_SCENARIOS: EmailScenario[] = [
   ...ALL_POST_CALL_SCENARIOS,
   ...ALL_DAILY_SCENARIOS,
@@ -26,7 +32,9 @@ const ALL_SCENARIOS: EmailScenario[] = [
   ...ALL_EOC_SCENARIOS,
 ];
 
-function renderEmail(scenario: EmailScenario) {
+type DesignVersion = "new" | "previous" | "compare";
+
+function renderNew(scenario: EmailScenario) {
   switch (scenario.email_type) {
     case "post_call":
       return <PostCallSummary data={scenario} />;
@@ -41,11 +49,43 @@ function renderEmail(scenario: EmailScenario) {
   }
 }
 
+function renderLegacy(scenario: EmailScenario) {
+  switch (scenario.email_type) {
+    case "post_call":
+      return <LegacyPostCallSummary data={scenario} />;
+    case "daily":
+      return <LegacyDailyDigest data={scenario} />;
+    case "weekly":
+      return <LegacyWeeklyPerformance data={scenario} />;
+    case "monthly":
+      return <LegacyMonthlyValueReport data={scenario} />;
+    case "eoc":
+      return <LegacyEndOfCampaignReport data={scenario} />;
+  }
+}
+
+const VERSION_KEY = "vini.emailer.design-version";
+
 export default function App() {
   const [selectedId, setSelectedId] = useState<string>(
     ALL_SCENARIOS[0]?.scenario_id ?? ""
   );
   const [mobileNavOpen, setMobileNavOpen] = useState<boolean>(false);
+  const [version, setVersion] = useState<DesignVersion>(() => {
+    try {
+      const stored = window.localStorage.getItem(VERSION_KEY);
+      if (stored === "new" || stored === "previous" || stored === "compare") {
+        return stored;
+      }
+    } catch {}
+    return "new";
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(VERSION_KEY, version);
+    } catch {}
+  }, [version]);
 
   const selected = useMemo(
     () => ALL_SCENARIOS.find((s) => s.scenario_id === selectedId) ?? ALL_SCENARIOS[0],
@@ -120,14 +160,120 @@ export default function App() {
       <main className="relative flex flex-1 flex-col overflow-hidden">
         <ScenarioInspector scenario={selected} />
 
-        <div className="scroll-thin flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-          {renderEmail(selected)}
+        {/* Design-version toggle · sticky strip just below the scenario inspector */}
+        <DesignVersionToggle version={version} onChange={setVersion} />
+
+        <div className="scroll-thin flex-1 overflow-y-auto">
+          {version === "compare" ? (
+            <CompareView scenario={selected} />
+          ) : (
+            <div className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+              {version === "new" ? renderNew(selected) : renderLegacy(selected)}
+            </div>
+          )}
         </div>
 
         {isSuppressed ? (
           <SuppressedSendOverlay reason={suppressionReason} />
         ) : null}
       </main>
+    </div>
+  );
+}
+
+/* ============================================================
+   Design version toggle
+   ============================================================ */
+function DesignVersionToggle({
+  version,
+  onChange,
+}: {
+  version: DesignVersion;
+  onChange: (v: DesignVersion) => void;
+}) {
+  return (
+    <div className="flex flex-shrink-0 items-center justify-between gap-3 border-b border-border-subtle bg-surface-card px-4 py-2.5 sm:px-6">
+      <div className="flex items-center gap-2 text-[11px] text-text-secondary">
+        <span className="font-semibold uppercase tracking-widest text-text-muted">
+          Design version
+        </span>
+      </div>
+      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle">
+        <ToggleButton
+          active={version === "new"}
+          onClick={() => onChange("new")}
+          label="New"
+          sublabel="Dealer-report"
+        />
+        <ToggleButton
+          active={version === "previous"}
+          onClick={() => onChange("previous")}
+          label="Previous"
+          sublabel="EmailShell v1"
+        />
+        <ToggleButton
+          active={version === "compare"}
+          onClick={() => onChange("compare")}
+          label="Compare"
+          sublabel="Side by side"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ToggleButton({
+  active,
+  onClick,
+  label,
+  sublabel,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  sublabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex flex-col items-start px-3 py-1.5 text-left transition-colors duration-150 ${
+        active
+          ? "bg-brand-soft text-brand-primary"
+          : "bg-surface-card text-text-secondary hover:bg-surface-subtle"
+      }`}
+    >
+      <span className="text-[12px] font-semibold leading-tight">{label}</span>
+      <span className="text-[9px] uppercase tracking-widest text-text-muted">
+        {sublabel}
+      </span>
+    </button>
+  );
+}
+
+/* ============================================================
+   Side-by-side compare view
+   ============================================================ */
+function CompareView({ scenario }: { scenario: EmailScenario }) {
+  return (
+    <div className="grid grid-cols-1 divide-y divide-border-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+      <div className="min-w-0">
+        <div className="sticky top-0 z-10 border-b border-border-subtle bg-brand-soft px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-brand-primary sm:px-6">
+          New · Dealer-report
+        </div>
+        <div className="scroll-thin overflow-x-auto px-4 py-4 sm:px-6 sm:py-6">
+          {renderNew(scenario)}
+        </div>
+      </div>
+      <div className="min-w-0">
+        <div className="sticky top-0 z-10 border-b border-border-subtle bg-surface-subtle px-4 py-2 text-[11px] font-semibold uppercase tracking-widest text-text-muted sm:px-6">
+          Previous · EmailShell v1
+        </div>
+        <div className="scroll-thin overflow-x-auto px-4 py-4 sm:px-6 sm:py-6">
+          {renderLegacy(scenario)}
+        </div>
+      </div>
     </div>
   );
 }
