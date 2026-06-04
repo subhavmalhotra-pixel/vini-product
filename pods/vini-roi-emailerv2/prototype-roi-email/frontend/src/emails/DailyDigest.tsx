@@ -1,20 +1,23 @@
 import type { DailyDigestData } from "@test-data";
 import {
+  ActionRequiredCard,
+  AgentKpiStrip,
   BrandStrip,
   ByLocationCard,
   ConsoleCtaFooter,
   DealerReportShell,
   DonutKpi,
+  EdgeBanner,
   EmptyDayCard,
   GaugeKpi,
   Glossary,
+  OutboundCampaignsCard,
   RecentItemList,
   SectionStatusHeader,
+  TopList,
 } from "../components/dealer-report/primitives";
 
-type DailyDigestProps = {
-  data: DailyDigestData;
-};
+type DailyDigestProps = { data: DailyDigestData };
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -27,25 +30,22 @@ function formatDate(iso: string): string {
   });
 }
 
-/* ============================================================
-   Dealer-report style DailyDigest · matches the Spyne dealer-report
-   screenshots: white cards on a neutral background, soft shadows,
-   big donut + half-circle gauge KPIs, a clean "On track" pill, a
-   recent-activity list, a glossary, and a black "Open console" CTA.
-
-   The BDC daily data (appointments, conversations, leads, response
-   time) maps onto the same visual structure inventory uses in the
-   reference screenshots:
-     - Donut KPI       · Conversations split by channel
-     - Gauge KPI · 1   · Avg first-response time (lower is better)
-     - Gauge KPI · 2   · Vini handle rate (higher is better)
-     - By-channel row  · how Vini distributed the work
-     - Recent activity · top customers from yesterday
-     - Glossary        · how to read this report
-     - Open console    · deep-link CTA
-   ============================================================ */
+/**
+ * DailyDigest · dealer-report design.
+ *
+ * Renders every field in the DailyDigestData schema:
+ *   1.  Banners (edge cases)
+ *   2.  Brand strip + section header
+ *   3.  Hero KPIs (Conversations donut + 2 gauges) — or empty-day card
+ *   4.  Inbound KPI strip (Appointments · Unique leads + sub-metrics)
+ *   5.  After-hours + warm transfers
+ *   6.  Top vehicles / Top service intents (variant by agent)
+ *   7.  By-channel split
+ *   8.  Outbound block (campaigns + KPIs)
+ *   9.  Action Required
+ *   10. Glossary + Open console CTA
+ */
 export function DailyDigest({ data }: DailyDigestProps) {
-  // Derive headline numbers from the existing scenario shape.
   const yesterdayAppts = data.hero.yesterday_appts.yesterday ?? 0;
   const mtdAppts = data.hero.mtd_appts.mtd ?? 0;
   const yesterdayLeads = data.inbound?.activity.unique_leads.yesterday ?? 0;
@@ -54,19 +54,20 @@ export function DailyDigest({ data }: DailyDigestProps) {
   const channelSplit = data.channel_split;
   const channelTotal = channelSplit.call + channelSplit.sms + channelSplit.chat;
 
-  // First-response time KPI · pull from KPI cards if present, else fall back
+  // First-response and Vini handle KPI cards (when present)
   const responseCard = data.inbound?.kpi_cards.find((c) =>
     /response/i.test(c.label)
   );
   const responseTimeRaw = responseCard?.primary_value;
-  // Heuristic: convert "2m 10s" / "10s" / "1.5m" into a number of seconds.
   const responseSeconds = parseResponseSeconds(responseTimeRaw);
-  // Gauge bounds 0 → 300s (5 min) with thresholds <60s green · <180s amber · >180s red
   const responseGaugeValue = Math.min(responseSeconds ?? 0, 300);
   const responseLabelText =
-    responseTimeRaw ?? (responseSeconds !== null ? formatSeconds(responseSeconds) : "—");
+    responseTimeRaw !== undefined
+      ? String(responseTimeRaw) + (responseCard?.primary_unit ?? "")
+      : responseSeconds !== null
+      ? formatSeconds(responseSeconds)
+      : "—";
 
-  // Vini handle rate KPI · % of conversations Vini fully handled
   const transferCard = data.inbound?.kpi_cards.find((c) =>
     /transfer/i.test(c.label)
   );
@@ -74,10 +75,10 @@ export function DailyDigest({ data }: DailyDigestProps) {
     typeof transferCard?.primary_value === "number"
       ? transferCard.primary_value
       : null;
-  const handleRate = transferRate !== null ? 100 - transferRate : 78;
+  const handleRate = transferRate !== null ? Math.max(0, 100 - transferRate) : 78;
 
-  // Top vehicles → recent items list
-  const topRows = (data.inbound?.top_vehicles ?? []).slice(0, 5).map((v, i) => ({
+  // Top vehicles → recent items (visual hero)
+  const topVehiclesRows = (data.inbound?.top_vehicles ?? []).slice(0, 5).map((v, i) => ({
     primary: v.name,
     chip: v.trend === "up" ? "trending" : undefined,
     secondary: `${v.count} customer${v.count === 1 ? "" : "s"} interested${
@@ -94,6 +95,17 @@ export function DailyDigest({ data }: DailyDigestProps) {
     thumbHue: (i * 67) % 360,
   }));
 
+  // Top service intents — used by Service IB scenarios
+  const topIntentsRows = (data.inbound?.top_intents ?? []).map((it) => ({
+    label: it.name,
+    value: it.count,
+    trend: it.trend,
+  }));
+
+  // Onboarding banner (Day 1–7)
+  const isOnboarding = !!data.hero.show_onboarding_banner;
+
+  // Overall status pill
   const isEmptyDay = yesterdayAppts === 0 && yesterdayLeads === 0;
   const overallStatus = isEmptyDay
     ? "neutral"
@@ -101,15 +113,41 @@ export function DailyDigest({ data }: DailyDigestProps) {
     ? "on-track"
     : "watch";
 
+  // After-hours + warm transfers (always rendered when inbound data exists)
+  const afterHours = data.inbound?.activity.after_hours;
+  const warmTransfers = data.inbound?.activity.warm_transfers;
+
   return (
     <DealerReportShell>
-      {/* Brand strip · top of the report */}
+      {/* Brand strip */}
       <BrandStrip
         dealerName={data.dealer.name}
         metaLine={`Vini · Daily Digest · ${formatDate(data.reporting_date)}`}
       />
 
-      {/* Section header · "Yesterday at {dealer}" + status pill + date */}
+      {/* Edge-case banners */}
+      {data.banners && data.banners.length > 0 ? (
+        <div className="space-y-2">
+          {data.banners.map((banner, idx) => (
+            <EdgeBanner
+              key={idx}
+              severity={banner.severity}
+              message={banner.message}
+              deepLink={banner.deep_link}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {/* Onboarding banner */}
+      {isOnboarding ? (
+        <EdgeBanner
+          severity="info"
+          message={`Vini is live for you. ${mtdLeads} leads engaged since go-live. Your first weekly summary lands in 7 days.`}
+        />
+      ) : null}
+
+      {/* Section header */}
       <SectionStatusHeader
         title="Yesterday"
         scope={`at ${data.dealer.name}`}
@@ -117,7 +155,7 @@ export function DailyDigest({ data }: DailyDigestProps) {
         date={formatDate(data.reporting_date)}
       />
 
-      {/* Hero KPI row · 1 donut + 2 gauges (or empty-day card on zero) */}
+      {/* Hero KPI row · donut + 2 gauges OR empty-day card */}
       {isEmptyDay ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_2fr]">
           <EmptyDayCard
@@ -134,11 +172,7 @@ export function DailyDigest({ data }: DailyDigestProps) {
             centerLabel="Appointments · MTD"
             ribbon={{ label: `${mtdLeads} leads engaged MTD`, tone: "on-track" }}
             segments={[
-              {
-                label: "MTD appts",
-                value: mtdAppts || 1,
-                color: "positive",
-              },
+              { label: "MTD appts", value: Math.max(mtdAppts, 1), color: "positive" },
             ]}
             pills={[
               { label: "Leads MTD", value: mtdLeads.toLocaleString() },
@@ -148,7 +182,6 @@ export function DailyDigest({ data }: DailyDigestProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {/* Conversations donut (split by channel) */}
           <DonutKpi
             centerNumber={conversations.toLocaleString()}
             centerLabel="Conversations"
@@ -172,7 +205,6 @@ export function DailyDigest({ data }: DailyDigestProps) {
             ]}
           />
 
-          {/* Avg first-response gauge (lower-is-better) */}
           <GaugeKpi
             label="Avg first-response"
             ribbon={
@@ -191,10 +223,9 @@ export function DailyDigest({ data }: DailyDigestProps) {
               { upTo: 180, color: "warning" },
               { upTo: 300, color: "negative" },
             ]}
-            sub={{ label: "Display", value: String(responseLabelText) }}
+            sub={{ label: "Display", value: responseLabelText }}
           />
 
-          {/* Vini handle rate gauge */}
           <GaugeKpi
             label="Vini handle rate"
             ribbon={
@@ -220,6 +251,78 @@ export function DailyDigest({ data }: DailyDigestProps) {
           />
         </div>
       )}
+
+      {/* Inbound KPI strip (full schema) */}
+      {data.inbound && data.inbound.kpi_cards.length > 0 ? (
+        <AgentKpiStrip
+          agentLabel="Inbound performance · yesterday"
+          cards={data.inbound.kpi_cards.map((c) => ({
+            label: c.label,
+            value: c.primary_value,
+            unit: c.primary_unit,
+            sub: c.subtitle,
+            delta:
+              c.delta !== undefined
+                ? `${c.delta > 0 ? "+" : ""}${c.delta}%`
+                : undefined,
+            deltaDirection:
+              c.delta !== undefined && c.delta > 0
+                ? "good"
+                : c.delta !== undefined && c.delta < 0
+                ? "bad"
+                : "neutral",
+            unavailable: c.unavailable,
+          }))}
+        />
+      ) : null}
+
+      {/* After-hours + warm transfers */}
+      {data.inbound && (afterHours || warmTransfers) ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {afterHours ? (
+            <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                After-hours · yesterday
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[11px] text-text-secondary">Leads engaged</div>
+                  <div className="mt-0.5 text-[18px] font-bold tabular text-text-primary">
+                    {afterHours.leads_engaged.toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-text-secondary">Appts booked</div>
+                  <div className="mt-0.5 text-[18px] font-bold tabular text-text-primary">
+                    {afterHours.appts_booked.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {warmTransfers ? (
+            <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                Warm transfers
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-[11px] text-text-secondary">Yesterday</div>
+                  <div className="mt-0.5 text-[18px] font-bold tabular text-text-primary">
+                    {(warmTransfers.yesterday ?? 0).toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-text-secondary">MTD</div>
+                  <div className="mt-0.5 text-[18px] font-bold tabular text-text-primary">
+                    {(warmTransfers.mtd ?? 0).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* By channel · how Vini distributed the work */}
       {channelTotal > 0 ? (
@@ -249,7 +352,7 @@ export function DailyDigest({ data }: DailyDigestProps) {
               total: channelSplit.chat.toLocaleString(),
               segments: [
                 { value: channelSplit.chat, color: "positive" },
-                { value: Math.max(channelTotal - channelSplit.chat, 0), color: "neutral" as never },
+                { value: Math.max(channelTotal - channelSplit.chat, 0), color: "positive" },
               ],
               rightPill: { label: `${Math.round((channelSplit.chat / channelTotal) * 100)}%`, tone: "neutral" },
             },
@@ -257,46 +360,86 @@ export function DailyDigest({ data }: DailyDigestProps) {
         />
       ) : null}
 
-      {/* Recent activity · top customers from yesterday */}
-      {topRows.length > 0 ? (
-        <RecentItemList title="Top vehicles of interest · yesterday" rows={topRows} />
+      {/* Top vehicles · used by Sales IB scenarios */}
+      {topVehiclesRows.length > 0 ? (
+        <RecentItemList title="Top vehicles of interest · yesterday" rows={topVehiclesRows} />
       ) : null}
 
-      {/* Glossary · how to read this report */}
+      {/* Top service intents · used by Service IB scenarios */}
+      {topIntentsRows.length > 0 ? (
+        <TopList
+          eyebrow="Service IB"
+          title="Top service intents · yesterday"
+          rows={topIntentsRows}
+        />
+      ) : null}
+
+      {/* Outbound block · used by Sales OB scenarios */}
+      {data.outbound && data.outbound.show_block ? (
+        <OutboundCampaignsCard
+          reached={data.outbound.unique_reached.yesterday ?? 0}
+          reachedMtd={data.outbound.unique_reached.mtd ?? 0}
+          connectRate={
+            data.outbound.connect_rate.unavailable
+              ? null
+              : data.outbound.connect_rate.yesterday ?? 0
+          }
+          apptsSet={data.outbound.appts_set.yesterday ?? 0}
+          apptsSetMtd={data.outbound.appts_set.mtd ?? 0}
+          campaigns={data.outbound.active_campaigns.map((c) => ({
+            name: c.name,
+            dials: c.dials,
+            appts: c.appts,
+            conversionPct: c.conversion_pct,
+            status: c.status,
+            pausedWarning: c.paused_warning,
+          }))}
+          audiencesExhausted={data.outbound.all_audiences_exhausted}
+        />
+      ) : null}
+
+      {/* Action Required */}
+      {data.action_required && data.action_required.length > 0 ? (
+        <ActionRequiredCard
+          items={data.action_required.map((i) => ({
+            type: i.type,
+            count: i.count,
+            deepLink: i.deep_link,
+          }))}
+        />
+      ) : null}
+
+      {/* Glossary */}
       <Glossary
         items={[
           {
             label: "Avg first-response",
             symbol: "*",
-            description:
-              "Median seconds from inbound contact to Vini's first reply.",
+            description: "Median seconds from inbound contact to Vini's first reply.",
             ideal: "Under 60 s",
           },
           {
             label: "Vini handle rate",
             symbol: "†",
-            description:
-              "Share of conversations Vini fully resolved without a human handoff.",
+            description: "Share of conversations Vini fully resolved without a human handoff.",
             ideal: "75% or above",
           },
           {
-            label: "Conversations",
+            label: "Warm transfer",
             symbol: "‡",
-            description:
-              "Unique customer threads across voice, SMS, and chat handled by Vini yesterday.",
-            ideal: "Trending up over time",
+            description: "Vini brings a live customer to the advisor on the same call with full context.",
+            ideal: "Pickup within 30 s",
           },
           {
-            label: "Hot trend",
+            label: "After-hours capture",
             symbol: "§",
-            description:
-              "A vehicle whose lead count rose week-over-week. Tag your highest-intent customers first.",
-            ideal: "Address within 2 h",
+            description: "Calls and chats Vini handled outside business hours · would have gone to voicemail pre-Vini.",
+            ideal: "Trending up over time",
           },
         ]}
       />
 
-      {/* Bottom CTA · console deep-link */}
+      {/* Footer · console deep-link CTA */}
       <ConsoleCtaFooter
         message="Want the full breakdown?"
         detail="Conversation transcripts, lead history & per-rep stats"
@@ -307,13 +450,9 @@ export function DailyDigest({ data }: DailyDigestProps) {
   );
 }
 
-/* ============================================================
-   Helpers
-   ============================================================ */
 function parseResponseSeconds(v: string | number | undefined): number | null {
   if (v === undefined || v === null) return null;
   if (typeof v === "number") return v;
-  // "2m 10s" / "10s" / "1.5m" / "1h 5m"
   const minMatch = v.match(/(\d+(?:\.\d+)?)m/);
   const secMatch = v.match(/(\d+(?:\.\d+)?)s/);
   const hourMatch = v.match(/(\d+(?:\.\d+)?)h/);

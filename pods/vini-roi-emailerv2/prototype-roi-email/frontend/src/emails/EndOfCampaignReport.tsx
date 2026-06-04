@@ -1,15 +1,23 @@
 import type { EOCData } from "@test-data";
-import { EmailShell } from "../components/EmailShell";
-import { CTAButton } from "../components/CTAButton";
-import { EdgeCaseBanner } from "../components/EdgeCaseBanner";
+import {
+  BrandStrip,
+  ConsoleCtaFooter,
+  DealerReportShell,
+  FunnelChart,
+  Glossary,
+  MultichannelTable,
+  OutcomeDonut,
+  SectionStatusHeader,
+  TopList,
+  TouchpointTable,
+} from "../components/dealer-report/primitives";
 
-type EndOfCampaignReportProps = {
-  data: EOCData;
-};
+type EOCProps = { data: EOCData };
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -17,267 +25,243 @@ function formatDate(iso: string): string {
   });
 }
 
-const OUTCOME_LABEL: Record<string, string> = {
-  appointment_booked: "Appointment booked",
-  warm_transfer: "Warm transfer",
-  follow_up: "Follow-up scheduled",
-  no_response: "No response",
-  opted_out: "Opted out",
-  dnc: "Do-not-call",
-  lost: "Lost",
-};
+/**
+ * EndOfCampaignReport · dealer-report design.
+ *
+ * Renders every EOCData field:
+ *   - campaign meta · brand strip · section header
+ *   - headline (appts · contactable · conversion % · opt-in booked %)
+ *   - conversion_funnel · Reached → Contacted → Appts → ABR%
+ *   - per_touchpoint · attribution table
+ *   - multichannel · per-channel performance table
+ *   - outcome_distribution · donut
+ *   - top_objections · bar list
+ *   - value_estimate_appendix (optional)
+ */
+export function EndOfCampaignReport({ data }: EOCProps) {
+  const range = `${formatDate(data.campaign.start_date)} – ${formatDate(data.campaign.end_date)}`;
 
-export function EndOfCampaignReport({ data }: EndOfCampaignReportProps) {
-  // v4: `recommendations` removed (§9.4). The "all audiences exhausted" banner
-  // is now keyed off the campaign meta (audience_size === sends + opted_out is
-  // a reasonable signal) — or off the scenario id for the prototype.
-  const audiencesExhausted = data.scenario_id?.includes("exhausted");
+  const status =
+    data.headline.conversion_pct >= 8
+      ? "on-track"
+      : data.headline.conversion_pct >= 4
+      ? "watch"
+      : "off-track";
 
   return (
-    <EmailShell
-      dealerName={data.dealer.name}
-      emailTitle="End-of-Campaign Report"
-      dateRange={`${formatDate(data.campaign.start_date)} – ${formatDate(
-        data.campaign.end_date
-      )}`}
-      reportingPeriod={`${formatDate(data.campaign.start_date)} – ${formatDate(
-        data.campaign.end_date
-      )}`}
-    >
-      {/* v5 — top hero campaign summary (4-stat headline grid) removed.
-            Campaign title + edge banner stay (lightweight title block);
-            the Conversion funnel below is now the visual headline. */}
-      <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <div className="text-[11px] font-semibold uppercase tracking-widest text-brand-primary">
-          Campaign
+    <DealerReportShell>
+      <BrandStrip
+        dealerName={data.dealer.name}
+        metaLine={`Vini · End-of-Campaign · ${range}`}
+      />
+
+      <SectionStatusHeader
+        title={data.campaign.name}
+        scope="campaign closed"
+        status={status}
+        date={range}
+      />
+
+      {/* Campaign meta · 4 hero tiles */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <HeroTile label="Appointments" value={data.headline.appts.toLocaleString()} tone="positive" />
+        <HeroTile label="Contactable" value={data.headline.contactable.toLocaleString()} />
+        <HeroTile
+          label="Conversion"
+          value={`${data.headline.conversion_pct.toFixed(2)}%`}
+          tone={
+            data.headline.conversion_pct >= 8
+              ? "positive"
+              : data.headline.conversion_pct >= 4
+              ? "neutral"
+              : "negative"
+          }
+        />
+        <HeroTile
+          label="Opt-in → booked"
+          value={`${data.headline.opt_in_booked_pct.toFixed(1)}%`}
+        />
+      </div>
+
+      {/* Campaign details · audience + outreach mix */}
+      <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          Campaign details
         </div>
-        <h2 className="mt-1 text-lg font-semibold leading-tight text-text-primary sm:text-xl">
-          {data.campaign.name}
-        </h2>
-
-        {audiencesExhausted ? (
-          <div className="mt-4">
-            <EdgeCaseBanner
-              severity="info"
-              message="All outreach audiences have been exhausted. Upload a new contactable list before the next campaign cycle."
-            />
-          </div>
-        ) : null}
-
-        {/* Conversion funnel — promoted to top-of-fold as the new primary
-              headline (v5). Steps: Reached leads → Contacted → Appointments → ABR%. */}
-        <div className="mt-5">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Conversion funnel
-          </h3>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <FunnelStep
-              label="Reached leads"
-              value={data.conversion_funnel.reached_leads}
-            />
-            <FunnelStep
-              label="Contacted"
-              value={data.conversion_funnel.contacted}
-            />
-            <FunnelStep
-              label="Appointments"
-              value={data.conversion_funnel.appointments}
-              accent
-            />
-            <FunnelStep
-              label="ABR"
-              value={`${data.conversion_funnel.abr_pct.toFixed(1)}%`}
-              accent
-            />
-          </div>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <CustomerStat label="Audience size" value={data.campaign.audience_size.toLocaleString()} />
+          <CustomerStat label="Contactable" value={data.campaign.contactable.toLocaleString()} />
+          <CustomerStat label="Opted out" value={data.campaign.opted_out.toLocaleString()} />
+          <CustomerStat label="Sends" value={data.campaign.sends.toLocaleString()} />
+          <CustomerStat label="Dials" value={data.campaign.dials.toLocaleString()} />
+          <CustomerStat label="Messages" value={data.campaign.messages.toLocaleString()} />
+          <CustomerStat label="Start" value={formatDate(data.campaign.start_date)} />
+          <CustomerStat label="End" value={formatDate(data.campaign.end_date)} />
         </div>
+      </div>
 
-        <div className="mt-6">
-          <CTAButton
-            label="Open campaign analytics"
-            href={`/console/campaigns/${data.campaign.id}`}
-          />
-        </div>
-      </section>
+      {/* Conversion funnel */}
+      <FunnelChart
+        eyebrow="Conversion funnel"
+        title={`Reached → Contacted → Appointments · ABR ${data.conversion_funnel.abr_pct.toFixed(1)}%`}
+        stages={[
+          { label: "Reached leads", value: data.conversion_funnel.reached_leads },
+          { label: "Contacted", value: data.conversion_funnel.contacted },
+          { label: "Appointments", value: data.conversion_funnel.appointments },
+        ]}
+      />
 
-      {/* Per-touchpoint */}
-      <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-          First-touch vs last-touch attribution
-        </h2>
-        <div className="-mx-4 mt-3 overflow-x-auto sm:mx-0">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                <th className="sticky left-0 bg-surface-card px-4 py-1.5 sm:px-0 sm:pr-3">
-                  Touchpoint
-                </th>
-                <th className="py-1.5 pr-3 text-right">First-touch %</th>
-                <th className="py-1.5 pr-4 text-right sm:pr-0">Last-touch %</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle">
-              {data.per_touchpoint.map((t) => (
-                <tr key={t.touchpoint}>
-                  <td className="sticky left-0 bg-surface-card px-4 py-2 text-text-primary sm:px-0 sm:pr-3">
-                    {t.touchpoint}
-                  </td>
-                  <td className="py-2 pr-3 text-right tabular text-text-primary">
-                    {t.first_touch_appt_pct}%
-                  </td>
-                  <td className="py-2 pr-4 text-right font-semibold tabular text-text-primary sm:pr-0">
-                    {t.last_touch_appt_pct}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Multichannel */}
-      <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-          Multichannel performance
-        </h2>
-        <div className="-mx-4 mt-3 overflow-x-auto sm:mx-0">
-          <table className="w-full min-w-[480px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                <th className="sticky left-0 bg-surface-card px-4 py-1.5 sm:px-0 sm:pr-3">
-                  Channel
-                </th>
-                <th className="py-1.5 pr-3 text-right">Conversations</th>
-                <th className="py-1.5 pr-3 text-right">Engagement</th>
-                <th className="py-1.5 pr-4 text-right sm:pr-0">Appts</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle">
-              {data.multichannel.map((c) => (
-                <tr key={c.channel}>
-                  <td className="sticky left-0 bg-surface-card px-4 py-2 capitalize text-text-primary sm:px-0 sm:pr-3">
-                    {c.channel}
-                  </td>
-                  <td className="py-2 pr-3 text-right tabular text-text-primary">
-                    {c.conversations.toLocaleString()}
-                  </td>
-                  <td className="py-2 pr-3 text-right tabular text-text-primary">
-                    {c.engagement_pct}%
-                  </td>
-                  <td className="py-2 pr-4 text-right font-semibold tabular text-text-primary sm:pr-0">
-                    {c.appts}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* Outcome distribution */}
-      <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-          Outcome distribution
-        </h2>
-        <ul className="mt-3 space-y-3">
-          {data.outcome_distribution.map((o) => (
-            <li key={o.outcome} className="flex items-center gap-2 text-sm sm:gap-3">
-              <span className="w-32 shrink-0 truncate text-text-primary sm:w-44">
-                {OUTCOME_LABEL[o.outcome] ?? o.outcome}
-              </span>
-              <div className="flex-1">
-                <div className="h-2 w-full rounded-full bg-surface-background">
-                  <div
-                    className="h-2 rounded-full bg-brand-primary"
-                    style={{ width: `${Math.min(100, o.pct)}%` }}
-                  />
-                </div>
-              </div>
-              <span className="w-12 text-right font-semibold tabular text-text-primary sm:w-16">
-                {o.count.toLocaleString()}
-              </span>
-              <span className="hidden w-12 text-right text-xs tabular text-text-secondary sm:inline">
-                {o.pct.toFixed(1)}%
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* Top exit intents — v4 keeps the data shape, label updated.
-            "Conversion by vehicle / service" and "Recommendations" sections
-            removed per §9.4. */}
-      <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-          Top exit intents
-        </h2>
-        <ul className="mt-3 divide-y divide-border-subtle rounded-md border border-border-subtle">
-          {data.top_objections.map((o) => (
-            <li
-              key={o.objection}
-              className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm"
-            >
-              <span className="truncate text-text-primary">{o.objection}</span>
-              <span className="ml-2 font-semibold tabular text-text-primary">
-                {o.count}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* Optional value estimate appendix */}
-      {data.value_estimate_appendix ? (
-        <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Value estimate (appendix)
-          </h2>
-          <div className="mt-3 rounded-lg border border-border-subtle bg-surface-background p-5">
-            <div className="text-2xl font-bold leading-tight tabular text-text-primary sm:text-3xl">
-              ${data.value_estimate_appendix.influenced_amount.toLocaleString()}
-            </div>
-            <div className="mt-1 text-xs leading-relaxed text-text-secondary tabular">
-              {data.value_estimate_appendix.appts} appts × $
-              {data.value_estimate_appendix.avg_appointment_value} avg
-              appointment value
-            </div>
-            <div className="mt-2 text-[11px] leading-relaxed text-text-muted">
-              Based on your configured average appointment value.
-            </div>
-          </div>
-        </section>
+      {/* Multichannel performance */}
+      {data.multichannel && data.multichannel.length > 0 ? (
+        <MultichannelTable
+          title="Per-channel performance"
+          rows={data.multichannel.map((c) => ({
+            channel: c.channel,
+            conversations: c.conversations,
+            engagementPct: c.engagement_pct,
+            appts: c.appts,
+          }))}
+        />
       ) : null}
-    </EmailShell>
+
+      {/* Per-touchpoint attribution */}
+      {data.per_touchpoint && data.per_touchpoint.length > 0 ? (
+        <TouchpointTable
+          rows={data.per_touchpoint.map((r) => ({
+            touchpoint: r.touchpoint,
+            firstTouchPct: r.first_touch_appt_pct,
+            lastTouchPct: r.last_touch_appt_pct,
+          }))}
+        />
+      ) : null}
+
+      {/* Outcome distribution donut */}
+      {data.outcome_distribution && data.outcome_distribution.length > 0 ? (
+        <OutcomeDonut outcomes={data.outcome_distribution} />
+      ) : null}
+
+      {/* Top objections */}
+      {data.top_objections && data.top_objections.length > 0 ? (
+        <TopList
+          eyebrow="Customer feedback"
+          title="Top objections"
+          rows={data.top_objections.slice(0, 7).map((o) => ({
+            label: o.objection,
+            value: o.count,
+          }))}
+        />
+      ) : null}
+
+      {/* Value estimate appendix */}
+      {data.value_estimate_appendix ? (
+        <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            Value estimate · appendix
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <CustomerStat
+              label="Appointments"
+              value={data.value_estimate_appendix.appts.toLocaleString()}
+            />
+            <CustomerStat
+              label="Avg appt value"
+              value={`$${data.value_estimate_appendix.avg_appointment_value.toLocaleString()}`}
+            />
+            <CustomerStat
+              label="Influenced revenue"
+              value={`$${data.value_estimate_appendix.influenced_amount.toLocaleString()}`}
+              sub="Directional · directional only"
+            />
+          </div>
+        </div>
+      ) : null}
+
+      <Glossary
+        items={[
+          {
+            label: "ABR",
+            symbol: "*",
+            description:
+              "Appointment Booking Rate · % of contacted customers who booked an appointment.",
+            ideal: "≥ 8% on retention campaigns",
+          },
+          {
+            label: "First-touch %",
+            symbol: "†",
+            description:
+              "Share of appointments where this touchpoint was the customer's first contact.",
+            ideal: "Channel-dependent",
+          },
+          {
+            label: "Last-touch %",
+            symbol: "‡",
+            description:
+              "Share of appointments where this touchpoint immediately preceded the booking.",
+            ideal: "Channel-dependent",
+          },
+          {
+            label: "Influenced revenue",
+            symbol: "§",
+            description:
+              "Directional · appointments × avg appointment value. Does not account for close rate.",
+            ideal: "Used for QBR sizing only",
+          },
+        ]}
+      />
+
+      <ConsoleCtaFooter
+        message="Rinse and improve."
+        detail="Customer lists, transcripts, and next-campaign suggestions"
+        ctaLabel="Open console"
+        href="/console/campaigns"
+      />
+    </DealerReportShell>
   );
 }
 
-function FunnelStep({
+function HeroTile({
   label,
   value,
-  muted,
-  accent,
+  tone = "neutral",
 }: {
   label: string;
-  value: number | string;
-  muted?: boolean;
-  accent?: boolean;
+  value: string;
+  tone?: "positive" | "negative" | "neutral";
 }) {
+  const valueClass =
+    tone === "positive"
+      ? "text-positive"
+      : tone === "negative"
+      ? "text-negative"
+      : "text-text-primary";
   return (
-    <div className="rounded-lg border border-border-subtle bg-surface-card p-4">
-      <div className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-4 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
         {label}
       </div>
-      <div
-        className={`mt-1.5 text-2xl font-bold leading-tight tabular sm:text-3xl ${
-          muted
-            ? "text-text-muted"
-            : accent
-              ? "text-brand-primary"
-              : "text-text-primary"
-        }`}
-      >
-        {typeof value === "number" ? value.toLocaleString() : value}
+      <div className={`mt-1.5 text-[22px] font-bold tabular leading-tight ${valueClass}`}>
+        {value}
       </div>
+    </div>
+  );
+}
+
+function CustomerStat({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border-subtle bg-surface-background p-3">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        {label}
+      </div>
+      <div className="mt-1 text-[18px] font-bold tabular text-text-primary">{value}</div>
+      {sub ? <div className="mt-0.5 text-[11px] text-text-muted">{sub}</div> : null}
     </div>
   );
 }

@@ -815,3 +815,860 @@ export function DealerReportShell({
     </div>
   );
 }
+
+/* ============================================================
+   12. Top-N list · vehicles · intents · services · objections
+   ============================================================ */
+export function TopList({
+  title,
+  rows,
+  eyebrow,
+  rightSlot,
+}: {
+  title: string;
+  eyebrow?: string;
+  rightSlot?: ReactNode;
+  rows: { label: string; value: string | number; trend?: "up" | "down" | "flat"; sub?: string }[];
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="flex items-baseline justify-between gap-3">
+        <div>
+          {eyebrow ? (
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              {eyebrow}
+            </div>
+          ) : null}
+          <div className="text-[13px] font-semibold text-text-primary">{title}</div>
+        </div>
+        {rightSlot}
+      </div>
+      <ul className="mt-3 divide-y divide-border-muted">
+        {rows.map((r) => (
+          <li
+            key={r.label}
+            className="flex items-baseline justify-between gap-3 py-2.5 text-[13px]"
+          >
+            <div className="min-w-0 flex-1">
+              <span className="truncate text-text-primary">{r.label}</span>
+              {r.sub ? (
+                <div className="text-[11px] text-text-muted">{r.sub}</div>
+              ) : null}
+            </div>
+            <span className="inline-flex items-center gap-2">
+              <span className="tabular font-semibold text-text-primary">
+                {typeof r.value === "number" ? r.value.toLocaleString() : r.value}
+              </span>
+              {r.trend ? <TrendIcon trend={r.trend} /> : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TrendIcon({ trend }: { trend: "up" | "down" | "flat" }) {
+  const map = {
+    up: { sym: "↑", cls: "text-positive" },
+    down: { sym: "↓", cls: "text-negative" },
+    flat: { sym: "→", cls: "text-text-muted" },
+  } as const;
+  const { sym, cls } = map[trend];
+  return <span className={`text-[11px] font-bold ${cls}`}>{sym}</span>;
+}
+
+/* ============================================================
+   13. Funnel · cascading stage bars with drop-off counts
+   ============================================================ */
+export function FunnelChart({
+  stages,
+  title,
+  eyebrow,
+}: {
+  title?: string;
+  eyebrow?: string;
+  stages: { label: string; value: number; suffix?: string }[];
+}) {
+  const max = stages[0]?.value || 1;
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      {title || eyebrow ? (
+        <div className="mb-4">
+          {eyebrow ? (
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              {eyebrow}
+            </div>
+          ) : null}
+          {title ? (
+            <div className="text-[13px] font-semibold text-text-primary">
+              {title}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="space-y-2.5">
+        {stages.map((s, i) => {
+          const pct = (s.value / max) * 100;
+          const dropoff = i > 0 ? stages[i - 1].value - s.value : 0;
+          const dropPct =
+            i > 0 ? (dropoff / Math.max(stages[i - 1].value, 1)) * 100 : 0;
+          return (
+            <div key={s.label}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-[12px] font-semibold text-text-primary">
+                  {s.label}
+                </span>
+                <span className="tabular text-[13px] font-semibold text-text-primary">
+                  {s.value.toLocaleString()}
+                  {s.suffix ?? ""}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <div className="relative h-6 flex-1 overflow-hidden rounded-md bg-brand-soft">
+                  <div
+                    className="absolute inset-y-0 left-0 flex items-center bg-brand-primary px-2.5"
+                    style={{ width: `${pct}%` }}
+                  >
+                    {pct >= 14 ? (
+                      <span className="text-[10px] font-semibold tabular text-white">
+                        {pct.toFixed(0)}%
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                {i > 0 ? (
+                  <span className="w-20 text-right text-[11px] text-negative tabular">
+                    −{dropoff.toLocaleString()} ({dropPct.toFixed(0)}%)
+                  </span>
+                ) : (
+                  <span className="w-20" />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   14. Trend bar chart · day-by-day / six-month series
+   ============================================================ */
+export function TrendBarChart({
+  title,
+  eyebrow,
+  series,
+  /** Optional: render appointments as a line overlay on top */
+  appts,
+  apptsLabel = "Appts",
+}: {
+  title?: string;
+  eyebrow?: string;
+  series: { label: string; segments: { value: number; color: "info" | "warning" | "positive" | "negative" | "neutral" }[] }[];
+  appts?: number[];
+  apptsLabel?: string;
+}) {
+  const COLOR_HEX = {
+    info: "#1D4ED8",
+    warning: "#D97706",
+    positive: "#16A34A",
+    negative: "#DC2626",
+    neutral: "#94A3B8",
+  } as const;
+  const totals = series.map((s) => s.segments.reduce((sum, x) => sum + x.value, 0));
+  const max = Math.max(...totals, 1);
+  const apptMax = appts ? Math.max(...appts, 1) : 1;
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      {(eyebrow || title) && (
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            {eyebrow ? (
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                {eyebrow}
+              </div>
+            ) : null}
+            {title ? (
+              <div className="text-[13px] font-semibold text-text-primary">{title}</div>
+            ) : null}
+          </div>
+          {appts ? (
+            <div className="inline-flex items-center gap-1.5 text-[11px] text-text-secondary">
+              <span className="inline-block h-1.5 w-3 rounded-full bg-text-primary" />
+              {apptsLabel}
+            </div>
+          ) : null}
+        </div>
+      )}
+      <div className="relative">
+        <div
+          className="grid items-end gap-2"
+          style={{ gridTemplateColumns: `repeat(${series.length}, minmax(0, 1fr))` }}
+        >
+          {series.map((s, i) => {
+            return (
+              <div key={s.label} className="flex flex-col items-center gap-1">
+                <div className="relative flex h-28 w-full flex-col-reverse overflow-hidden rounded-md bg-surface-subtle">
+                  {s.segments.map((seg, k) => {
+                    const totalForCol = totals[i] || 1;
+                    const h = (seg.value / Math.max(max, 1)) * 100;
+                    void totalForCol;
+                    return (
+                      <div
+                        key={k}
+                        style={{ height: `${h}%`, background: COLOR_HEX[seg.color] }}
+                        title={`${seg.value}`}
+                      />
+                    );
+                  })}
+                  {appts && appts[i] !== undefined ? (
+                    <span
+                      className="absolute left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-text-primary ring-2 ring-surface-card"
+                      style={{
+                        bottom: `${(appts[i] / apptMax) * 100}%`,
+                      }}
+                      aria-hidden
+                    />
+                  ) : null}
+                </div>
+                <div className="text-[10px] font-semibold tabular text-text-muted">
+                  {s.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   15. Story card · AI-narrated journey from Weekly / Monthly
+   ============================================================ */
+export function StoryCard({
+  badge,
+  summary,
+  intent,
+  outcomeChip,
+  turnsCount,
+  channelsUsed,
+}: {
+  badge: string;
+  summary: string;
+  intent?: string;
+  outcomeChip?: { label: string; tone: Status };
+  turnsCount?: number;
+  channelsUsed?: string[];
+}) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          Story of the period
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-semibold text-brand-primary">
+          {badge}
+        </span>
+      </div>
+      {intent ? (
+        <div className="mt-3 text-[13px] font-semibold text-text-primary">
+          {intent}
+        </div>
+      ) : null}
+      <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
+        {summary}
+      </p>
+      {(turnsCount || channelsUsed || outcomeChip) && (
+        <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border-muted pt-3 text-[11px] text-text-secondary">
+          {turnsCount ? (
+            <span>
+              <span className="tabular font-semibold text-text-primary">{turnsCount}</span>{" "}
+              turns
+            </span>
+          ) : null}
+          {channelsUsed && channelsUsed.length > 0 ? (
+            <span>
+              <span className="font-semibold text-text-primary">
+                {channelsUsed.join(" · ")}
+              </span>
+            </span>
+          ) : null}
+          {outcomeChip ? (
+            <span
+              className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_PILL[outcomeChip.tone].bg} ${STATUS_PILL[outcomeChip.tone].text}`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${STATUS_PILL[outcomeChip.tone].dot}`} />
+              {outcomeChip.label}
+            </span>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   16. Agent KPI strip · per-agent (Sales IB · Service IB etc.)
+   ============================================================ */
+export function AgentKpiStrip({
+  agentLabel,
+  cards,
+}: {
+  agentLabel: string;
+  cards: { label: string; value: string | number; unit?: string; sub?: string; delta?: string; deltaDirection?: "good" | "bad" | "neutral"; unavailable?: boolean }[];
+}) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        {agentLabel}
+      </div>
+      <div
+        className="mt-3 grid gap-3"
+        style={{
+          gridTemplateColumns: `repeat(${Math.min(cards.length, 4)}, minmax(0, 1fr))`,
+        }}
+      >
+        {cards.map((c) => {
+          const deltaTone =
+            c.deltaDirection === "good"
+              ? "text-positive"
+              : c.deltaDirection === "bad"
+              ? "text-negative"
+              : "text-text-muted";
+          const arrow = c.delta?.startsWith("-")
+            ? "↓"
+            : c.delta?.startsWith("+")
+            ? "↑"
+            : "·";
+          return (
+            <div key={c.label} className="rounded-lg border border-border-subtle bg-surface-background p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+                {c.label}
+              </div>
+              <div className="mt-1.5 text-[20px] font-bold tabular text-text-primary">
+                {c.unavailable ? "—" : (
+                  <>
+                    {typeof c.value === "number" ? c.value.toLocaleString() : c.value}
+                    {c.unit ? <span className="text-[14px] font-semibold">{c.unit}</span> : null}
+                  </>
+                )}
+              </div>
+              {c.delta ? (
+                <div className={`mt-0.5 text-[11px] font-medium tabular ${deltaTone}`}>
+                  {arrow} {c.delta.replace(/^[-+]/, "")}
+                </div>
+              ) : null}
+              {c.sub ? (
+                <div className="mt-0.5 text-[11px] text-text-muted">{c.sub}</div>
+              ) : null}
+              {c.unavailable ? (
+                <div className="mt-0.5 text-[10px] text-text-muted">Data unavailable</div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   17. Customer card · used by Post-Call summary
+   ============================================================ */
+export function CustomerCard({
+  name,
+  phone,
+  callScore,
+  callScoreLabel,
+  sentiment,
+}: {
+  name: string;
+  phone: string;
+  callScore: number;
+  callScoreLabel: "Excellent" | "Good" | "Fair" | "Poor";
+  sentiment: "positive" | "neutral" | "negative";
+}) {
+  const scoreTone: Status =
+    callScoreLabel === "Excellent" || callScoreLabel === "Good"
+      ? "on-track"
+      : callScoreLabel === "Fair"
+      ? "watch"
+      : "off-track";
+  const sentimentTone: Status =
+    sentiment === "positive" ? "on-track" : sentiment === "neutral" ? "neutral" : "off-track";
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Customer
+      </div>
+      <div className="mt-2 flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[16px] font-semibold tracking-tight text-text-primary">
+            {name}
+          </div>
+          <div className="text-[12px] text-text-muted tabular">{phone}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            AI call score
+          </div>
+          <div className="mt-1 inline-flex items-baseline gap-1.5">
+            <span className="text-[22px] font-bold tabular text-text-primary">{callScore}</span>
+            <span
+              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_PILL[scoreTone].bg} ${STATUS_PILL[scoreTone].text}`}
+            >
+              {callScoreLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface-subtle px-2.5 py-0.5 text-[11px]">
+        <span
+          className={`h-1.5 w-1.5 rounded-full ${STATUS_PILL[sentimentTone].dot}`}
+        />
+        <span className="capitalize text-text-secondary">{sentiment}</span>
+        <span className="text-text-muted">sentiment</span>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   18. Appointment card · used by Post-Call
+   ============================================================ */
+export function AppointmentCard({
+  label,
+  schedule,
+  vehicle,
+}: {
+  label: string;
+  schedule: string;
+  vehicle: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Appointment
+      </div>
+      <div className="mt-2 text-[15px] font-semibold text-text-primary">{label}</div>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            Schedule
+          </div>
+          <div className="mt-1 text-[13px] tabular text-text-primary">{schedule}</div>
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            Vehicle
+          </div>
+          <div className="mt-1 text-[13px] text-text-primary">{vehicle}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   19. Action-required card · used by DailyDigest
+   ============================================================ */
+export function ActionRequiredCard({
+  items,
+}: {
+  items: { type: string; count: number; deepLink: string }[];
+}) {
+  if (items.length === 0) return null;
+  const HUMAN_LABEL: Record<string, string> = {
+    sms_takeover: "SMS takeover needed",
+    appt_confirmed: "Appointments confirmed",
+    failed_booking: "Failed bookings · retry",
+    specific_salesperson: "Customer asked for someone",
+    compliance_alert: "Compliance alert",
+    callback_request: "Callback requested",
+    recall_response: "Recall response queued",
+    pending_status_update: "Pending status update",
+    no_show: "No-show follow-up",
+  };
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Action Required
+      </div>
+      <ul className="mt-3 divide-y divide-border-muted">
+        {items.map((it) => (
+          <li
+            key={`${it.type}-${it.count}`}
+            className="flex items-center justify-between gap-3 py-2.5"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex h-7 min-w-[28px] items-center justify-center rounded-md bg-brand-soft px-1.5 text-[12px] font-semibold tabular text-brand-primary">
+                {it.count}
+              </span>
+              <span className="text-[13px] text-text-primary">
+                {HUMAN_LABEL[it.type] ?? it.type}
+              </span>
+            </div>
+            <a
+              href={it.deepLink}
+              onClick={(e) => e.preventDefault()}
+              className="text-[12px] font-semibold text-info hover:underline"
+            >
+              Review →
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ============================================================
+   20. Outbound campaigns card · used by DailyDigest
+   ============================================================ */
+export function OutboundCampaignsCard({
+  reached,
+  reachedMtd,
+  connectRate,
+  apptsSet,
+  apptsSetMtd,
+  campaigns,
+  audiencesExhausted,
+}: {
+  reached: number;
+  reachedMtd: number;
+  connectRate: number | null;
+  apptsSet: number;
+  apptsSetMtd: number;
+  campaigns: {
+    name: string;
+    dials: number;
+    appts: number;
+    conversionPct: number;
+    status: "active" | "paused" | "completed";
+    pausedWarning?: boolean;
+  }[];
+  audiencesExhausted?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          Outbound · yesterday
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <SubKpiBox label="Unique reached" value={reached.toLocaleString()} sub={`${reachedMtd} MTD`} />
+        <SubKpiBox
+          label="Connect rate"
+          value={connectRate !== null ? `${connectRate}%` : "—"}
+          sub={connectRate !== null ? "vs yesterday" : "Data unavailable"}
+        />
+        <SubKpiBox label="Appointments set" value={apptsSet.toLocaleString()} sub={`${apptsSetMtd} MTD`} />
+      </div>
+      {campaigns.length > 0 ? (
+        <ul className="mt-4 divide-y divide-border-muted border-t border-border-muted">
+          {campaigns.map((c) => {
+            const showOnHold = c.pausedWarning;
+            const label = showOnHold ? "On hold" : c.status;
+            const tone: Status = showOnHold
+              ? "watch"
+              : c.status === "active"
+              ? "on-track"
+              : c.status === "completed"
+              ? "neutral"
+              : "watch";
+            return (
+              <li key={c.name} className="py-2.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-[13px] font-semibold text-text-primary">
+                    {c.name}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_PILL[tone].bg} ${STATUS_PILL[tone].text}`}
+                  >
+                    {label}
+                  </span>
+                </div>
+                <div className="mt-1 text-[11px] tabular text-text-muted">
+                  {c.dials} dials · {c.appts} appts ·{" "}
+                  {c.conversionPct.toFixed(1)}% conversion
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      {audiencesExhausted ? (
+        <div className="mt-3 rounded-md border border-warning/30 bg-warning-soft px-3 py-2 text-[11px] text-warning">
+          All campaign audiences exhausted. Upload a new list to resume outreach.
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SubKpiBox({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border-subtle bg-surface-background p-3">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        {label}
+      </div>
+      <div className="mt-1 text-[18px] font-bold tabular text-text-primary">{value}</div>
+      {sub ? <div className="mt-0.5 text-[11px] text-text-muted">{sub}</div> : null}
+    </div>
+  );
+}
+
+/* ============================================================
+   21. Edge-case banner · yellow/blue inline strip inside the report
+   ============================================================ */
+export function EdgeBanner({
+  severity = "info",
+  message,
+  deepLink,
+}: {
+  severity?: "info" | "warning";
+  message: string;
+  deepLink?: string;
+}) {
+  const styles =
+    severity === "warning"
+      ? "border-warning/40 bg-warning-soft text-warning"
+      : "border-info-border bg-info-soft text-info";
+  return (
+    <div
+      className={`flex items-baseline justify-between gap-3 rounded-md border px-3 py-2 text-[12px] ${styles}`}
+    >
+      <span>{message}</span>
+      {deepLink ? (
+        <a
+          href={deepLink}
+          onClick={(e) => e.preventDefault()}
+          className="font-semibold underline"
+        >
+          Open →
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+/* ============================================================
+   22. Bullet list card · key takeaways · topics · objections
+   ============================================================ */
+export function BulletListCard({
+  title,
+  eyebrow,
+  bullets,
+}: {
+  title?: string;
+  eyebrow?: string;
+  bullets: string[];
+}) {
+  if (bullets.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      {eyebrow ? (
+        <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          {eyebrow}
+        </div>
+      ) : null}
+      {title ? (
+        <div className="mt-0.5 text-[13px] font-semibold text-text-primary">
+          {title}
+        </div>
+      ) : null}
+      <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-text-secondary">
+        {bullets.map((b, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="mt-1.5 inline-block h-1 w-1 flex-shrink-0 rounded-full bg-brand-primary" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ============================================================
+   23. Topics card · used by Post-Call (name + description rows)
+   ============================================================ */
+export function TopicsCard({
+  topics,
+}: {
+  topics: { name: string; description: string }[];
+}) {
+  if (topics.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Topics discussed
+      </div>
+      <ul className="mt-3 divide-y divide-border-muted">
+        {topics.map((t) => (
+          <li key={t.name} className="py-3">
+            <div className="text-[13px] font-semibold text-text-primary">
+              {t.name}
+            </div>
+            <p className="mt-1 text-[12px] leading-relaxed text-text-secondary">
+              {t.description}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ============================================================
+   24. Touchpoint attribution table · used by EOC
+   ============================================================ */
+export function TouchpointTable({
+  rows,
+}: {
+  rows: {
+    touchpoint: string;
+    firstTouchPct: number;
+    lastTouchPct: number;
+  }[];
+}) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Per-touchpoint attribution
+      </div>
+      <table className="mt-3 w-full">
+        <thead>
+          <tr className="border-b border-border-muted">
+            <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              Touchpoint
+            </th>
+            <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              First-touch %
+            </th>
+            <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              Last-touch %
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.touchpoint} className="border-b border-border-muted last:border-0">
+              <td className="py-2.5 text-[13px] font-semibold text-text-primary">
+                {r.touchpoint}
+              </td>
+              <td className="py-2.5 text-right text-[13px] tabular text-text-secondary">
+                {r.firstTouchPct.toFixed(1)}%
+              </td>
+              <td className="py-2.5 text-right text-[13px] tabular text-text-secondary">
+                {r.lastTouchPct.toFixed(1)}%
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ============================================================
+   25. Multichannel performance table · used by Weekly / EOC
+   ============================================================ */
+export function MultichannelTable({
+  rows,
+  title = "Multichannel performance",
+}: {
+  title?: string;
+  rows: { channel: string; conversations: number; engagementPct: number; appts: number }[];
+}) {
+  return (
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-5 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        {title}
+      </div>
+      <table className="mt-3 w-full">
+        <thead>
+          <tr className="border-b border-border-muted">
+            <th className="pb-2 text-left text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              Channel
+            </th>
+            <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              Conversations
+            </th>
+            <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              Engagement %
+            </th>
+            <th className="pb-2 text-right text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              Appts
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.channel} className="border-b border-border-muted last:border-0">
+              <td className="py-2.5 text-[13px] font-semibold capitalize text-text-primary">
+                {r.channel}
+              </td>
+              <td className="py-2.5 text-right text-[13px] tabular text-text-secondary">
+                {r.conversations.toLocaleString()}
+              </td>
+              <td className="py-2.5 text-right text-[13px] tabular text-text-secondary">
+                {r.engagementPct.toFixed(1)}%
+              </td>
+              <td className="py-2.5 text-right text-[13px] tabular text-text-secondary">
+                {r.appts.toLocaleString()}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ============================================================
+   26. Outcome distribution donut · used by EOC
+   ============================================================ */
+export function OutcomeDonut({
+  outcomes,
+}: {
+  outcomes: { outcome: string; count: number; pct: number }[];
+}) {
+  const segments = outcomes.map((o, i) => ({
+    label: humanizeOutcome(o.outcome),
+    value: o.count,
+    color: (["info", "positive", "warning", "negative", "neutral"][i % 5] as
+      | "info"
+      | "positive"
+      | "warning"
+      | "negative"
+      | "neutral"),
+  }));
+  const total = outcomes.reduce((s, o) => s + o.count, 0);
+  return (
+    <DonutKpi
+      centerNumber={total.toLocaleString()}
+      centerLabel="Total Conversations"
+      segments={segments}
+    />
+  );
+}
+
+function humanizeOutcome(o: string): string {
+  return o
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}

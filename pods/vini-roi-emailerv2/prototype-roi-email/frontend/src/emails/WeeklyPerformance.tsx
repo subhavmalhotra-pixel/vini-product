@@ -1,8 +1,19 @@
-import type { AgentType, WeeklyData } from "@test-data";
-import { EmailShell } from "../components/EmailShell";
-import { CTAButton } from "../components/CTAButton";
-import { KPICardView } from "../components/KPICard";
-import { StoryBlock } from "../components/StoryBlock";
+import type { WeeklyData, AgentType } from "@test-data";
+import {
+  AgentKpiStrip,
+  BrandStrip,
+  ConsoleCtaFooter,
+  DealerReportShell,
+  FunnelChart,
+  Glossary,
+  MultichannelTable,
+  SectionStatusHeader,
+  StoryCard,
+  TopList,
+  TrendBarChart,
+} from "../components/dealer-report/primitives";
+
+type WeeklyProps = { data: WeeklyData };
 
 const AGENT_LABEL: Record<AgentType, string> = {
   sales_ib: "Sales · Inbound",
@@ -12,215 +23,248 @@ const AGENT_LABEL: Record<AgentType, string> = {
 };
 
 function formatRange(start: string, end: string): string {
-  const fmt = (iso: string) => {
-    const [y, m, d] = iso.split("-").map(Number);
-    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    });
-  };
-  return `${fmt(start)} – ${fmt(end)}`;
+  const s = parseDate(start);
+  const e = parseDate(end);
+  return `${s.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} – ${e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
 }
 
-type WeeklyPerformanceProps = {
-  data: WeeklyData;
-};
+function parseDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
 
-export function WeeklyPerformance({ data }: WeeklyPerformanceProps) {
+/**
+ * WeeklyPerformance · dealer-report design.
+ *
+ * Renders every WeeklyData field:
+ *   - reporting_period · brand strip · section header with status
+ *   - agent_kpi_strips · per-agent KPI cards
+ *   - day_by_day_trend · stacked-channel bar chart with appts line overlay
+ *   - funnel · Unique → Engaged → Converted with drop-offs
+ *   - channel_performance · per-channel table
+ *   - top_vehicles · top_services
+ *   - story · Story of the Week card
+ */
+export function WeeklyPerformance({ data }: WeeklyProps) {
+  const period = formatRange(data.reporting_period.start, data.reporting_period.end);
+
+  // Headline status — derived from the funnel conversion rate
+  const conversionPct =
+    data.funnel.engaged > 0
+      ? (data.funnel.converted / data.funnel.engaged) * 100
+      : 0;
+  const headlineStatus =
+    conversionPct >= 25 ? "on-track" : conversionPct >= 15 ? "watch" : "off-track";
+
   return (
-    <EmailShell
-      dealerName={data.dealer.name}
-      emailTitle="Weekly Performance"
-      dateRange={formatRange(data.reporting_period.start, data.reporting_period.end)}
-      reportingPeriod={formatRange(
-        data.reporting_period.start,
-        data.reporting_period.end
-      )}
-    >
-      {/* v3: "Week at a glance" removed — the per-agent KPI strips below already
-          surface the same headline figures (unique/engaged/converted) per agent,
-          making the aggregate funnel redundant. Top CTA preserved here. */}
-      <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-          Performance by agent
-        </h2>
-        <div className="mt-3 space-y-4">
-          {data.agent_kpi_strips.map((strip) => (
-            <div
-              key={strip.agent}
-              className="rounded-lg border border-border-subtle bg-surface-background p-3 sm:p-4"
-            >
-              <div className="px-1 pb-3 text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
-                {AGENT_LABEL[strip.agent]}
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {strip.cards.map((card, idx) => (
-                  <KPICardView key={idx} card={card} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6">
-          <CTAButton
-            label="Open weekly performance dashboard"
-            href="/console/reports/weekly"
-          />
-        </div>
-      </section>
+    <DealerReportShell>
+      <BrandStrip
+        dealerName={data.dealer.name}
+        metaLine={`Vini · Weekly Performance · ${period}`}
+      />
 
-      {/* Day-by-day trend */}
-      <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-          Day-by-day activity
-        </h2>
-        <div className="-mx-4 mt-3 overflow-x-auto sm:mx-0">
-          <DayByDayTable rows={data.day_by_day_trend} />
-        </div>
-      </section>
+      <SectionStatusHeader
+        title="Last week"
+        scope={`at ${data.dealer.name}`}
+        status={headlineStatus}
+        date={period}
+      />
 
-      {/* Channel performance */}
+      {/* Agent KPI strips · one per agent in scope */}
+      {data.agent_kpi_strips.map((strip) => (
+        <AgentKpiStrip
+          key={strip.agent}
+          agentLabel={AGENT_LABEL[strip.agent]}
+          cards={strip.cards.map((c) => ({
+            label: c.label,
+            value: c.primary_value,
+            unit: c.primary_unit,
+            sub: c.subtitle,
+            delta:
+              c.delta !== undefined
+                ? `${c.delta > 0 ? "+" : ""}${c.delta}%`
+                : undefined,
+            deltaDirection:
+              c.delta !== undefined && c.delta > 0
+                ? "good"
+                : c.delta !== undefined && c.delta < 0
+                ? "bad"
+                : "neutral",
+            unavailable: c.unavailable,
+          }))}
+        />
+      ))}
+
+      {/* Day-by-day stacked trend with appointments overlay */}
+      <TrendBarChart
+        eyebrow="Weekly trend"
+        title="Conversations by day · appts overlaid"
+        series={data.day_by_day_trend.map((d) => ({
+          label: d.day,
+          segments: [
+            { value: d.call, color: "info" as const },
+            { value: d.sms, color: "warning" as const },
+            { value: d.chat, color: "positive" as const },
+          ],
+        }))}
+        appts={data.day_by_day_trend.map((d) => d.appts)}
+        apptsLabel="Appts"
+      />
+
+      {/* Conversion funnel */}
+      <FunnelChart
+        eyebrow="Engagement funnel"
+        title="Unique customers → Engaged → Converted"
+        stages={[
+          { label: "Unique customers", value: data.funnel.unique },
+          { label: "Engaged", value: data.funnel.engaged },
+          { label: "Converted (booked)", value: data.funnel.converted },
+        ]}
+      />
+
+      {/* Funnel meta · new vs returning + touches + channels */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <FunnelMetaCard
+          label="New vs returning"
+          value={`${data.funnel.new_vs_returning.new} · ${data.funnel.new_vs_returning.returning}`}
+          sub="New customers · Returning"
+        />
+        <FunnelMetaCard
+          label="Avg touches per customer"
+          value={data.funnel.avg_touches.toFixed(1)}
+          sub="Across the week"
+        />
+        <FunnelMetaCard
+          label="Avg channels per customer"
+          value={data.funnel.avg_channels.toFixed(1)}
+          sub="Multi-channel index"
+        />
+      </div>
+
+      {/* Channel performance table */}
       {data.channel_performance && data.channel_performance.length > 0 ? (
-        <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Channel performance
-          </h2>
-          <div className="-mx-4 mt-3 overflow-x-auto sm:mx-0">
-            <table className="w-full min-w-[480px] text-sm">
-              <thead>
-                <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                  <th className="sticky left-0 bg-surface-card px-4 py-1.5 sm:px-0 sm:pr-3">
-                    Channel
-                  </th>
-                  <th className="py-1.5 pr-3 text-right">Conversations</th>
-                  <th className="py-1.5 pr-3 text-right">Engagement</th>
-                  <th className="py-1.5 pr-4 text-right sm:pr-0">Appts</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle">
-                {data.channel_performance.map((c) => (
-                  <tr key={c.channel}>
-                    <td className="sticky left-0 bg-surface-card px-4 py-2 capitalize text-text-primary sm:px-0 sm:pr-3">
-                      {c.channel}
-                    </td>
-                    <td className="py-2 pr-3 text-right tabular text-text-primary">
-                      {c.conversations}
-                    </td>
-                    <td className="py-2 pr-3 text-right tabular text-text-primary">
-                      {c.engagement_pct}%
-                    </td>
-                    <td className="py-2 pr-4 text-right font-semibold tabular text-text-primary sm:pr-0">
-                      {c.appts}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <MultichannelTable
+          rows={data.channel_performance.map((c) => ({
+            channel: c.channel,
+            conversations: c.conversations,
+            engagementPct: c.engagement_pct,
+            appts: c.appts,
+          }))}
+        />
       ) : null}
 
-      {/* Top vehicles / services */}
-      {data.top_vehicles && data.top_vehicles.length > 0 ? (
-        <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Top vehicles of interest
-          </h2>
-          <ul className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-            {data.top_vehicles.map((v) => (
-              <li
-                key={v.name}
-                className="flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-card px-3 py-2.5 text-sm"
-              >
-                <span className="truncate text-text-primary">{v.name}</span>
-                <span className="font-semibold tabular text-text-primary">{v.count}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+      {/* Top vehicles · top services */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TopList
+          eyebrow="Sales"
+          title="Top vehicles of interest"
+          rows={(data.top_vehicles ?? []).slice(0, 7).map((v) => ({
+            label: v.name,
+            value: v.count,
+          }))}
+        />
+        <TopList
+          eyebrow="Service"
+          title="Top service requests"
+          rows={(data.top_services ?? []).slice(0, 7).map((s) => ({
+            label: s.name,
+            value: s.count,
+          }))}
+        />
+      </div>
+
+      {/* Story of the Week */}
+      {data.story && data.story.summary_source === "ai_haiku" ? (
+        <StoryCard
+          badge={data.story.badge}
+          summary={data.story.summary}
+          intent={data.story.journey.intent}
+          turnsCount={data.story.journey.turns.length}
+          channelsUsed={data.story.journey.channels_used}
+          outcomeChip={{
+            label: humanizeOutcome(data.story.journey.outcome),
+            tone:
+              data.story.journey.outcome === "appointment_booked" ||
+              data.story.journey.outcome === "warm_transfer" ||
+              data.story.journey.outcome === "follow_up"
+                ? "on-track"
+                : data.story.journey.outcome === "dnc" ||
+                  data.story.journey.outcome === "opted_out" ||
+                  data.story.journey.outcome === "lost"
+                ? "off-track"
+                : "neutral",
+          }}
+        />
       ) : null}
 
-      {data.top_services && data.top_services.length > 0 ? (
-        <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Top service intents
-          </h2>
-          <ul className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-            {data.top_services.map((v) => (
-              <li
-                key={v.name}
-                className="flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-card px-3 py-2.5 text-sm"
-              >
-                <span className="truncate text-text-primary">{v.name}</span>
-                <span className="font-semibold tabular text-text-primary">{v.count}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <Glossary
+        items={[
+          {
+            label: "Engaged",
+            symbol: "*",
+            description:
+              "Unique customers who replied to or interacted with Vini at least once this week.",
+            ideal: "≥ 70% of unique customers",
+          },
+          {
+            label: "Converted",
+            symbol: "†",
+            description:
+              "Customers who booked an appointment or completed the outbound goal.",
+            ideal: "≥ 25% of engaged",
+          },
+          {
+            label: "Multi-channel index",
+            symbol: "‡",
+            description:
+              "Average number of channels (voice / SMS / chat) used per customer.",
+            ideal: "1.5+ over a week",
+          },
+          {
+            label: "Story of the Week",
+            symbol: "§",
+            description:
+              "AI-narrated example of a notable conversation. Source: Vini transcript + outcome.",
+            ideal: "Used in QBRs, not for metrics",
+          },
+        ]}
+      />
 
-      {/* Story of the week — silently absent when AI summary unavailable */}
-      {data.story ? <StoryBlock story={data.story} title="Story of the week" /> : null}
-    </EmailShell>
+      <ConsoleCtaFooter
+        message="Dig in by agent."
+        detail="Per-rep stats, transcripts, and outliers"
+        ctaLabel="Open console"
+        href="/console/reporting"
+      />
+    </DealerReportShell>
   );
 }
 
-function DayByDayTable({
-  rows,
+function FunnelMetaCard({
+  label,
+  value,
+  sub,
 }: {
-  rows: Array<{
-    day: string;
-    call: number;
-    sms: number;
-    chat: number;
-    total: number;
-    appts: number;
-  }>;
+  label: string;
+  value: string;
+  sub?: string;
 }) {
-  const maxTotal = Math.max(1, ...rows.map((r) => r.total));
   return (
-    <table className="w-full min-w-[640px] text-sm">
-      <thead>
-        <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-          <th className="sticky left-0 w-16 bg-surface-card px-4 py-1.5 sm:px-0 sm:pr-2">
-            Day
-          </th>
-          <th className="py-1.5 pr-2 text-right">Call</th>
-          <th className="py-1.5 pr-2 text-right">SMS</th>
-          <th className="py-1.5 pr-2 text-right">Chat</th>
-          <th className="py-1.5 pr-3 text-right">Total</th>
-          <th className="py-1.5">Volume</th>
-          <th className="py-1.5 pl-3 pr-4 text-right sm:pr-0">Appts</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border-subtle">
-        {rows.map((r) => (
-          <tr key={r.day}>
-            <td className="sticky left-0 bg-surface-card px-4 py-2 font-medium text-text-primary sm:px-0 sm:pr-2">
-              {r.day}
-            </td>
-            <td className="py-2 pr-2 text-right tabular text-text-primary">{r.call}</td>
-            <td className="py-2 pr-2 text-right tabular text-text-primary">{r.sms}</td>
-            <td className="py-2 pr-2 text-right tabular text-text-primary">{r.chat}</td>
-            <td className="py-2 pr-3 text-right font-semibold tabular text-text-primary">
-              {r.total}
-            </td>
-            <td className="py-2">
-              <div className="h-2 w-full rounded-full bg-surface-background">
-                <div
-                  className="h-2 rounded-full bg-brand-primary"
-                  style={{ width: `${(r.total / maxTotal) * 100}%` }}
-                />
-              </div>
-            </td>
-            <td className="py-2 pl-3 pr-4 text-right font-semibold tabular text-text-primary sm:pr-0">
-              {r.appts}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="rounded-xl border border-border-subtle bg-surface-card p-4 shadow-card">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        {label}
+      </div>
+      <div className="mt-1.5 text-[20px] font-bold tabular text-text-primary">
+        {value}
+      </div>
+      {sub ? <div className="mt-0.5 text-[11px] text-text-muted">{sub}</div> : null}
+    </div>
   );
+}
+
+function humanizeOutcome(o: string): string {
+  return o
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
