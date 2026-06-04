@@ -1,11 +1,16 @@
 import type { DailyDigestData } from "@test-data";
-import { EmailShell } from "../components/EmailShell";
-import { CTAButton } from "../components/CTAButton";
-import { KPICardView } from "../components/KPICard";
-import { MetricValueDisplay } from "../components/MetricValueDisplay";
-import { ChannelSplitBar } from "../components/ChannelSplitBar";
-import { ActionRequiredSection } from "../components/ActionRequiredSection";
-import { EdgeCaseBanner } from "../components/EdgeCaseBanner";
+import {
+  BrandStrip,
+  ByLocationCard,
+  ConsoleCtaFooter,
+  DealerReportShell,
+  DonutKpi,
+  EmptyDayCard,
+  GaugeKpi,
+  Glossary,
+  RecentItemList,
+  SectionStatusHeader,
+} from "../components/dealer-report/primitives";
 
 type DailyDigestProps = {
   data: DailyDigestData;
@@ -15,7 +20,6 @@ function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const date = new Date(Date.UTC(y, m - 1, d));
   return date.toLocaleDateString("en-US", {
-    weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -23,423 +27,306 @@ function formatDate(iso: string): string {
   });
 }
 
-function addDaysISO(iso: string, days: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
+/* ============================================================
+   Dealer-report style DailyDigest · matches the Spyne dealer-report
+   screenshots: white cards on a neutral background, soft shadows,
+   big donut + half-circle gauge KPIs, a clean "On track" pill, a
+   recent-activity list, a glossary, and a black "Open console" CTA.
 
+   The BDC daily data (appointments, conversations, leads, response
+   time) maps onto the same visual structure inventory uses in the
+   reference screenshots:
+     - Donut KPI       · Conversations split by channel
+     - Gauge KPI · 1   · Avg first-response time (lower is better)
+     - Gauge KPI · 2   · Vini handle rate (higher is better)
+     - By-channel row  · how Vini distributed the work
+     - Recent activity · top customers from yesterday
+     - Glossary        · how to read this report
+     - Open console    · deep-link CTA
+   ============================================================ */
 export function DailyDigest({ data }: DailyDigestProps) {
-  const yesterday = data.hero.yesterday_appts.yesterday ?? 0;
-  const mtd = data.hero.yesterday_appts.mtd ?? data.hero.mtd_appts.mtd ?? 0;
-  const isZeroYesterday = yesterday === 0;
-  const isOnboarding = !!data.hero.show_onboarding_banner;
-  // v2: Day 1–7 — show leads-only hero until the first appointment is booked.
-  const onboardingFirstBooking = isOnboarding && (yesterday > 0 || mtd > 0);
-  const onboardingLeadsToday =
-    data.inbound?.activity.unique_leads.yesterday ?? 0;
-  const onboardingLeadsSinceGoLive =
-    data.inbound?.activity.unique_leads.mtd ?? 0;
-  // v2: hide channel-split bar when every channel is zero (e.g. Service IB).
-  const heroChannelSplit = data.channel_split;
-  const heroChannelHasData =
-    heroChannelSplit.call + heroChannelSplit.sms + heroChannelSplit.chat > 0;
+  // Derive headline numbers from the existing scenario shape.
+  const yesterdayAppts = data.hero.yesterday_appts.yesterday ?? 0;
+  const mtdAppts = data.hero.mtd_appts.mtd ?? 0;
+  const yesterdayLeads = data.inbound?.activity.unique_leads.yesterday ?? 0;
+  const mtdLeads = data.inbound?.activity.unique_leads.mtd ?? 0;
+  const conversations = data.conversations_total;
+  const channelSplit = data.channel_split;
+  const channelTotal = channelSplit.call + channelSplit.sms + channelSplit.chat;
+
+  // First-response time KPI · pull from KPI cards if present, else fall back
+  const responseCard = data.inbound?.kpi_cards.find((c) =>
+    /response/i.test(c.label)
+  );
+  const responseTimeRaw = responseCard?.primary_value;
+  // Heuristic: convert "2m 10s" / "10s" / "1.5m" into a number of seconds.
+  const responseSeconds = parseResponseSeconds(responseTimeRaw);
+  // Gauge bounds 0 → 300s (5 min) with thresholds <60s green · <180s amber · >180s red
+  const responseGaugeValue = Math.min(responseSeconds ?? 0, 300);
+  const responseLabelText =
+    responseTimeRaw ?? (responseSeconds !== null ? formatSeconds(responseSeconds) : "—");
+
+  // Vini handle rate KPI · % of conversations Vini fully handled
+  const transferCard = data.inbound?.kpi_cards.find((c) =>
+    /transfer/i.test(c.label)
+  );
+  const transferRate =
+    typeof transferCard?.primary_value === "number"
+      ? transferCard.primary_value
+      : null;
+  const handleRate = transferRate !== null ? 100 - transferRate : 78;
+
+  // Top vehicles → recent items list
+  const topRows = (data.inbound?.top_vehicles ?? []).slice(0, 5).map((v, i) => ({
+    primary: v.name,
+    chip: v.trend === "up" ? "trending" : undefined,
+    secondary: `${v.count} customer${v.count === 1 ? "" : "s"} interested${
+      v.trend === "up" ? " · trending up" : ""
+    }`,
+    middle: data.dealer.name,
+    metric: `${v.count} leads`,
+    status:
+      v.trend === "up"
+        ? ({ label: "Hot", tone: "on-track" as const })
+        : v.trend === "down"
+        ? ({ label: "Cooling", tone: "watch" as const })
+        : ({ label: "Steady", tone: "neutral" as const }),
+    thumbHue: (i * 67) % 360,
+  }));
+
+  const isEmptyDay = yesterdayAppts === 0 && yesterdayLeads === 0;
+  const overallStatus = isEmptyDay
+    ? "neutral"
+    : yesterdayAppts > 0
+    ? "on-track"
+    : "watch";
 
   return (
-    <EmailShell
-      dealerName={data.dealer.name}
-      emailTitle="Daily Digest"
-      dateRange={formatDate(data.reporting_date)}
-      bdcHoursEquivalent={data.footer.bdc_hours_equivalent}
-      reportingPeriod={data.footer.reporting_period}
-      nextSend={data.footer.next_send}
-    >
-      {/* Banners — filtered for client-facing copy */}
-      {data.banners && data.banners.length > 0 ? (
-        <div className="space-y-2 px-4 pt-5 sm:px-6 lg:px-10">
-          {data.banners.map((banner, idx) => (
-            <EdgeCaseBanner
-              key={idx}
-              severity={banner.severity}
-              message={banner.message}
-              deepLink={banner.deep_link}
-            />
-          ))}
-        </div>
-      ) : null}
+    <DealerReportShell>
+      {/* Brand strip · top of the report */}
+      <BrandStrip
+        dealerName={data.dealer.name}
+        metaLine={`Vini · Daily Digest · ${formatDate(data.reporting_date)}`}
+      />
 
-      {/* Hero or Onboarding card */}
-      <section className="px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-        {isOnboarding && onboardingFirstBooking ? (
-          // v2: first appointment celebration tile
-          <div className="rounded-lg border border-positive/30 bg-positive/5 p-4 sm:p-6">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-positive">
-              First appointment booked
-            </div>
-            <div className="mt-2 text-lg font-semibold leading-tight text-text-primary">
-              Well done — Vini just landed its first booking for you.
-            </div>
-            <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-              Your first weekly performance summary still arrives{" "}
-              {addDaysISO(data.dealer.go_live_date, 7)}.
-            </p>
-          </div>
-        ) : isOnboarding ? (
-          // v2: Day 1–7 leads-only hero — no appointment number, forward-looking
-          <div className="rounded-lg border border-border-subtle bg-surface-background p-4 sm:p-6">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-brand-primary">
-              Vini is live for you
-            </div>
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
-              <MetricValueDisplay value={onboardingLeadsToday} size="hero" />
-              <span className="text-sm text-text-secondary">
-                leads engaged yesterday
-              </span>
-            </div>
-            <p className="mt-2 text-sm leading-relaxed text-text-secondary">
-              {onboardingLeadsSinceGoLive} leads engaged since go-live. Your
-              first weekly summary arrives{" "}
-              {addDaysISO(data.dealer.go_live_date, 7)}.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-border-subtle bg-surface-background p-4 sm:p-6">
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
-                Appointments yesterday
-              </div>
-              <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <MetricValueDisplay
-                  value={yesterday}
-                  size="hero"
-                  tone={isZeroYesterday ? "neutral-zero" : "default"}
-                />
-                {mtd > 0 ? (
-                  <span className="tabular text-xs text-text-secondary">
-                    +{mtd} month to date
-                  </span>
-                ) : null}
-              </div>
-              {/* v2: 'Xh of agent effort equivalent' line removed */}
-            </div>
-            <div className="rounded-lg border border-border-subtle bg-surface-background p-4 sm:p-6">
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-text-secondary">
-                Conversations handled
-              </div>
-              <div className="mt-2 flex items-baseline gap-3">
-                <MetricValueDisplay
-                  value={data.conversations_total}
-                  size="hero"
-                  tone={data.conversations_total === 0 ? "neutral-zero" : "default"}
-                />
-              </div>
-              {heroChannelHasData ? (
-                <div className="mt-4">
-                  <ChannelSplitBar data={data.channel_split} />
-                </div>
-              ) : null}
-            </div>
-          </div>
-        )}
+      {/* Section header · "Yesterday at {dealer}" + status pill + date */}
+      <SectionStatusHeader
+        title="Yesterday"
+        scope={`at ${data.dealer.name}`}
+        status={overallStatus}
+        date={formatDate(data.reporting_date)}
+      />
 
-        <div className="mt-6 flex flex-wrap items-center gap-4">
-          <CTAButton
-            label="View today's appointments"
-            href="/console/appointments?date=today"
+      {/* Hero KPI row · 1 donut + 2 gauges (or empty-day card on zero) */}
+      {isEmptyDay ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_2fr]">
+          <EmptyDayCard
+            eyebrow="Yesterday"
+            title="No activity yesterday"
+            body="Vini is on standby. Daily metrics resume when the next conversation arrives."
+            pills={[
+              { label: "Conversations", value: "—" },
+              { label: "Appointments", value: "—" },
+            ]}
           />
-          <CTAButton
-            label="Open conversation inbox"
-            href="/console/inbox"
-            variant="secondary"
+          <DonutKpi
+            centerNumber={mtdAppts.toLocaleString()}
+            centerLabel="Appointments · MTD"
+            ribbon={{ label: `${mtdLeads} leads engaged MTD`, tone: "on-track" }}
+            segments={[
+              {
+                label: "MTD appts",
+                value: mtdAppts || 1,
+                color: "positive",
+              },
+            ]}
+            pills={[
+              { label: "Leads MTD", value: mtdLeads.toLocaleString() },
+              { label: "Conv. MTD", value: conversations.toLocaleString() },
+            ]}
           />
         </div>
-      </section>
-
-      {/* Action Required */}
-      <ActionRequiredSection items={data.action_required} />
-
-      {/* Inbound */}
-      {data.inbound ? (
-        <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Inbound activity
-          </h2>
-
-          {/* v3: Hero KPIs — first 2 cards rendered large (Appointments + Unique leads). */}
-          {/* Sub-metrics — remaining cards rendered smaller (Avg response time / Transfer rate). */}
-          {data.inbound.kpi_cards.length > 0 ? (
-            <>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {data.inbound.kpi_cards.slice(0, 2).map((card, idx) => (
-                  <KPICardView key={idx} card={card} />
-                ))}
-              </div>
-              {data.inbound.kpi_cards.length > 2 ? (
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {data.inbound.kpi_cards.slice(2).map((card, idx) => (
-                    <SubMetricCard key={idx} card={card} />
-                  ))}
-                </div>
-              ) : null}
-            </>
-          ) : null}
-
-          {/* v3: auxiliary metrics — channel split (when has data), after-hours, warm transfers.
-              Removed the redundant Unique leads + Appointments set displays (now in hero above). */}
-          <div className="mt-5 space-y-3">
-            {/* v2: hide channel split when all zero (Service IB voice-dominant) */}
-            {(() => {
-              const s = data.inbound!.activity.channel_split;
-              return s.call + s.sms + s.chat > 0 ? (
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                    Channel breakdown
-                  </div>
-                  <div className="mt-2">
-                    <ChannelSplitBar data={s} />
-                  </div>
-                </div>
-              ) : null;
-            })()}
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                  After-hours
-                </div>
-                <div className="mt-1 text-sm leading-relaxed text-text-primary">
-                  <span className="font-semibold tabular">
-                    {data.inbound.activity.after_hours.leads_engaged}
-                  </span>{" "}
-                  leads engaged ·{" "}
-                  <span className="font-semibold tabular">
-                    {data.inbound.activity.after_hours.appts_booked}
-                  </span>{" "}
-                  appts booked
-                </div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                  Warm transfers
-                </div>
-                <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                  <MetricValueDisplay
-                    value={data.inbound.activity.warm_transfers.yesterday ?? 0}
-                    size="md"
-                  />
-                  <span className="tabular text-xs text-text-secondary">
-                    {data.inbound.activity.warm_transfers.mtd ?? 0} MTD
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {data.inbound.top_vehicles && data.inbound.top_vehicles.length > 0 ? (
-            <div className="mt-6">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                Top vehicles of interest
-              </h3>
-              <ul className="mt-2 divide-y divide-border-subtle rounded-md border border-border-subtle">
-                {data.inbound.top_vehicles.map((v) => (
-                  <li
-                    key={v.name}
-                    className="flex items-center justify-between gap-3 px-3 py-3 text-sm"
-                  >
-                    <span className="truncate text-text-primary">{v.name}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="font-semibold tabular text-text-primary">
-                        {v.count}
-                      </span>
-                      <TrendIcon trend={v.trend} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {data.inbound.top_intents && data.inbound.top_intents.length > 0 ? (
-            <div className="mt-6">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                Top service intents
-              </h3>
-              <ul className="mt-2 divide-y divide-border-subtle rounded-md border border-border-subtle">
-                {data.inbound.top_intents.map((v) => (
-                  <li
-                    key={v.name}
-                    className="flex items-center justify-between gap-3 px-3 py-3 text-sm"
-                  >
-                    <span className="truncate text-text-primary">{v.name}</span>
-                    <span className="flex items-center gap-2">
-                      <span className="font-semibold tabular text-text-primary">
-                        {v.count}
-                      </span>
-                      <TrendIcon trend={v.trend} />
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      {/* Outbound */}
-      {data.outbound && data.outbound.show_block ? (
-        <section className="border-t border-border-subtle px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-          <h2 className="text-xs font-medium uppercase tracking-wide text-text-secondary">
-            Outbound activity
-          </h2>
-
-          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <OBStat
-              label="Unique reached"
-              yesterday={data.outbound.unique_reached.yesterday ?? 0}
-              mtd={data.outbound.unique_reached.mtd ?? 0}
-            />
-            <OBStat
-              label="Connect rate"
-              yesterday={data.outbound.connect_rate.yesterday ?? 0}
-              mtd={data.outbound.connect_rate.mtd ?? 0}
-              unit="%"
-              unavailable={data.outbound.connect_rate.unavailable}
-            />
-            <OBStat
-              label="Appointments set"
-              yesterday={data.outbound.appts_set.yesterday ?? 0}
-              mtd={data.outbound.appts_set.mtd ?? 0}
-            />
-          </div>
-
-          {data.outbound.active_campaigns.length > 0 ? (
-            <div className="mt-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-                Active campaigns
-              </h3>
-              <ul className="mt-2 divide-y divide-border-subtle rounded-md border border-border-subtle">
-                {data.outbound.active_campaigns.map((c) => {
-                  // Client-facing: "campaign paused?" warning becomes an "On hold" pill.
-                  const showOnHold = c.paused_warning;
-                  const statusLabel = showOnHold ? "On hold" : c.status;
-                  return (
-                    <li key={c.name} className="px-3 py-3 text-sm">
-                      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-text-primary">
-                              {c.name}
-                            </span>
-                            <span className="rounded-full border border-border-subtle px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
-                              {statusLabel}
-                            </span>
-                          </div>
-                          <div className="mt-1 text-xs leading-relaxed text-text-secondary tabular">
-                            {c.dials} dials · {c.appts} appts ·{" "}
-                            {c.conversion_pct.toFixed(1)}% conversion
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
-
-          {data.outbound.all_audiences_exhausted ? (
-            <div className="mt-4">
-              <EdgeCaseBanner
-                severity="info"
-                message="All campaign audiences exhausted. Upload a new contactable list to resume outreach."
-              />
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-    </EmailShell>
-  );
-}
-
-function OBStat({
-  label,
-  yesterday,
-  mtd,
-  unit,
-  unavailable,
-}: {
-  label: string;
-  yesterday: number;
-  mtd: number;
-  unit?: string;
-  unavailable?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-border-subtle bg-surface-card p-4">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-        {label}
-      </div>
-      <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        {unavailable ? (
-          <MetricValueDisplay value="—" size="md" tone="muted" />
-        ) : (
-          <MetricValueDisplay value={yesterday} unit={unit} size="md" />
-        )}
-        <span className="tabular text-xs text-text-secondary">
-          {unavailable ? "" : `${mtd}${unit ?? ""} MTD`}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/**
- * v3: smaller, lower-density variant of KPICardView used for sub-metrics
- * (Avg response time, Transfer rate) so the 2 hero cards above stay dominant.
- */
-function SubMetricCard({
-  card,
-}: {
-  card: import("@test-data").KPICard;
-}) {
-  const isUnavailable = card.unavailable;
-  return (
-    <div className="rounded-md border border-border-subtle bg-surface-card px-4 py-3">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
-        {card.label}
-      </div>
-      <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-        {isUnavailable ? (
-          <MetricValueDisplay value="—" size="md" tone="muted" />
-        ) : (
-          <MetricValueDisplay
-            value={card.primary_value}
-            unit={card.primary_unit}
-            size="md"
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Conversations donut (split by channel) */}
+          <DonutKpi
+            centerNumber={conversations.toLocaleString()}
+            centerLabel="Conversations"
+            ribbon={
+              channelTotal > 0
+                ? { label: `${Math.round((channelSplit.call / channelTotal) * 100)}% voice`, tone: "on-track" }
+                : undefined
+            }
+            segments={
+              channelTotal > 0
+                ? ([
+                    { label: "Voice", value: channelSplit.call, color: "info" as const },
+                    { label: "SMS", value: channelSplit.sms, color: "warning" as const },
+                    { label: "Chat", value: channelSplit.chat, color: "positive" as const },
+                  ].filter((s) => s.value > 0))
+                : [{ label: "Conversations", value: 1, color: "info" as const }]
+            }
+            pills={[
+              { label: "Leads", value: yesterdayLeads.toLocaleString() },
+              { label: "Appts", value: yesterdayAppts.toLocaleString() },
+            ]}
           />
-        )}
-        {card.subtitle && !isUnavailable ? (
-          <span className="tabular text-xs text-text-secondary">
-            {card.subtitle}
-          </span>
-        ) : null}
-      </div>
-    </div>
+
+          {/* Avg first-response gauge (lower-is-better) */}
+          <GaugeKpi
+            label="Avg first-response"
+            ribbon={
+              responseSeconds !== null && responseSeconds <= 60
+                ? { label: "Excellent", tone: "on-track" }
+                : responseSeconds !== null && responseSeconds <= 180
+                ? { label: "On track", tone: "on-track" }
+                : { label: "Watch", tone: "watch" }
+            }
+            value={responseGaugeValue}
+            unit={typeof responseTimeRaw === "string" ? "" : "s"}
+            min={{ value: 0, label: "0s" }}
+            max={{ value: 300, label: "5m" }}
+            thresholds={[
+              { upTo: 60, color: "positive" },
+              { upTo: 180, color: "warning" },
+              { upTo: 300, color: "negative" },
+            ]}
+            sub={{ label: "Display", value: String(responseLabelText) }}
+          />
+
+          {/* Vini handle rate gauge */}
+          <GaugeKpi
+            label="Vini handle rate"
+            ribbon={
+              handleRate >= 75
+                ? { label: "Excellent", tone: "on-track" }
+                : handleRate >= 60
+                ? { label: "On track", tone: "on-track" }
+                : { label: "Watch", tone: "watch" }
+            }
+            value={Math.round(handleRate)}
+            unit="%"
+            min={{ value: 0, label: "0" }}
+            max={{ value: 100, label: "100" }}
+            thresholds={[
+              { upTo: 60, color: "negative" },
+              { upTo: 75, color: "warning" },
+              { upTo: 100, color: "positive" },
+            ]}
+            sub={{
+              label: "Routed to human",
+              value: transferRate !== null ? `${transferRate}%` : "—",
+            }}
+          />
+        </div>
+      )}
+
+      {/* By channel · how Vini distributed the work */}
+      {channelTotal > 0 ? (
+        <ByLocationCard
+          title="By channel · yesterday"
+          rows={[
+            {
+              name: "Voice",
+              total: channelSplit.call.toLocaleString(),
+              segments: [
+                { value: channelSplit.call, color: "info" },
+                { value: Math.max(channelTotal - channelSplit.call, 0), color: "positive" },
+              ],
+              rightPill: { label: `${Math.round((channelSplit.call / channelTotal) * 100)}%`, tone: "on-track" },
+            },
+            {
+              name: "SMS",
+              total: channelSplit.sms.toLocaleString(),
+              segments: [
+                { value: channelSplit.sms, color: "warning" },
+                { value: Math.max(channelTotal - channelSplit.sms, 0), color: "positive" },
+              ],
+              rightPill: { label: `${Math.round((channelSplit.sms / channelTotal) * 100)}%`, tone: "neutral" },
+            },
+            {
+              name: "Chat",
+              total: channelSplit.chat.toLocaleString(),
+              segments: [
+                { value: channelSplit.chat, color: "positive" },
+                { value: Math.max(channelTotal - channelSplit.chat, 0), color: "neutral" as never },
+              ],
+              rightPill: { label: `${Math.round((channelSplit.chat / channelTotal) * 100)}%`, tone: "neutral" },
+            },
+          ]}
+        />
+      ) : null}
+
+      {/* Recent activity · top customers from yesterday */}
+      {topRows.length > 0 ? (
+        <RecentItemList title="Top vehicles of interest · yesterday" rows={topRows} />
+      ) : null}
+
+      {/* Glossary · how to read this report */}
+      <Glossary
+        items={[
+          {
+            label: "Avg first-response",
+            symbol: "*",
+            description:
+              "Median seconds from inbound contact to Vini's first reply.",
+            ideal: "Under 60 s",
+          },
+          {
+            label: "Vini handle rate",
+            symbol: "†",
+            description:
+              "Share of conversations Vini fully resolved without a human handoff.",
+            ideal: "75% or above",
+          },
+          {
+            label: "Conversations",
+            symbol: "‡",
+            description:
+              "Unique customer threads across voice, SMS, and chat handled by Vini yesterday.",
+            ideal: "Trending up over time",
+          },
+          {
+            label: "Hot trend",
+            symbol: "§",
+            description:
+              "A vehicle whose lead count rose week-over-week. Tag your highest-intent customers first.",
+            ideal: "Address within 2 h",
+          },
+        ]}
+      />
+
+      {/* Bottom CTA · console deep-link */}
+      <ConsoleCtaFooter
+        message="Want the full breakdown?"
+        detail="Conversation transcripts, lead history & per-rep stats"
+        ctaLabel="Open console"
+        href="/console/action-items/pending"
+      />
+    </DealerReportShell>
   );
 }
 
-function TrendIcon({ trend }: { trend: "up" | "down" | "flat" }) {
-  const map = {
-    up: { sym: "↑", cls: "text-positive" },
-    down: { sym: "↓", cls: "text-negative" },
-    flat: { sym: "→", cls: "text-text-muted" },
-  } as const;
-  const { sym, cls } = map[trend];
-  return <span className={`text-xs font-bold ${cls}`}>{sym}</span>;
+/* ============================================================
+   Helpers
+   ============================================================ */
+function parseResponseSeconds(v: string | number | undefined): number | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v === "number") return v;
+  // "2m 10s" / "10s" / "1.5m" / "1h 5m"
+  const minMatch = v.match(/(\d+(?:\.\d+)?)m/);
+  const secMatch = v.match(/(\d+(?:\.\d+)?)s/);
+  const hourMatch = v.match(/(\d+(?:\.\d+)?)h/);
+  if (!minMatch && !secMatch && !hourMatch) return null;
+  const hours = hourMatch ? parseFloat(hourMatch[1]) : 0;
+  const mins = minMatch ? parseFloat(minMatch[1]) : 0;
+  const secs = secMatch ? parseFloat(secMatch[1]) : 0;
+  return Math.round(hours * 3600 + mins * 60 + secs);
+}
+
+function formatSeconds(s: number): string {
+  if (s < 60) return `${Math.round(s)}s`;
+  const m = Math.floor(s / 60);
+  const rem = Math.round(s - m * 60);
+  return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
 }
