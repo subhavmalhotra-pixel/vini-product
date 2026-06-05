@@ -12,6 +12,7 @@ import {
   type SendCell,
   type SendStatus,
 } from "./mockData";
+import { RooftopCellDrawer } from "./RooftopCellDrawer";
 
 /**
  * Vini Emailer · Rooftop Tracker
@@ -34,12 +35,23 @@ export function EmailerTracker() {
   // Track click-to-send / click-to-retry state per (rooftop, date, cadence)
   // Local-only: in production this calls an API to enqueue the send.
   const [sentNow, setSentNow] = useState<Record<string, true>>({});
+  // Drawer state · which cell was clicked
+  const [activeCell, setActiveCell] = useState<{ rooftop: RooftopRow; cell: SendCell } | null>(null);
 
   const cellKey = (r: RooftopRow, c: SendCell) =>
     `${r.rooftop_id}::${c.cadence}::${c.date}`;
 
-  const handleSendNow = (r: RooftopRow, c: SendCell) => {
-    setSentNow((prev) => ({ ...prev, [cellKey(r, c)]: true }));
+  const handleOpenCell = (r: RooftopRow, c: SendCell) => {
+    setActiveCell({ rooftop: r, cell: c });
+  };
+
+  const handleSendFromDrawer = (
+    rooftopId: string,
+    date: string,
+    cadence: SendCell["cadence"]
+  ) => {
+    const key = `${rooftopId}::${cadence}::${date}`;
+    setSentNow((prev) => ({ ...prev, [key]: true }));
   };
 
   // Columns vary by cadence
@@ -310,7 +322,7 @@ export function EmailerTracker() {
                         <SendStatusCell
                           cell={c}
                           sentNow={!!sent}
-                          onSendNow={() => handleSendNow(r, c)}
+                          onOpen={() => handleOpenCell(r, c)}
                         />
                       </td>
                     );
@@ -327,6 +339,14 @@ export function EmailerTracker() {
           </div>
         ) : null}
       </div>
+
+      {/* Cell-action drawer · snippet · reason · fill & send */}
+      <RooftopCellDrawer
+        rooftop={activeCell?.rooftop ?? null}
+        cell={activeCell?.cell ?? null}
+        onClose={() => setActiveCell(null)}
+        onSend={handleSendFromDrawer}
+      />
     </div>
   );
 }
@@ -353,11 +373,11 @@ function formatColLabel(cadence: Cadence, i: number): string {
 function SendStatusCell({
   cell,
   sentNow,
-  onSendNow,
+  onOpen,
 }: {
   cell: SendCell;
   sentNow: boolean;
-  onSendNow: () => void;
+  onOpen: () => void;
 }) {
   if (sentNow) {
     return (
@@ -373,9 +393,14 @@ function SendStatusCell({
   switch (cell.status) {
     case "sent":
       return (
-        <span className="inline-flex w-full items-center justify-center rounded-md bg-positive/10 px-2 py-1 text-[11px] font-semibold text-positive">
+        <button
+          type="button"
+          onClick={onOpen}
+          title="Click to view what was sent"
+          className="inline-flex w-full items-center justify-center rounded-md bg-positive/10 px-2 py-1 text-[11px] font-semibold text-positive transition-colors duration-150 hover:bg-positive/20"
+        >
           Sent
-        </span>
+        </button>
       );
     case "suppressed":
       return (
@@ -400,7 +425,7 @@ function SendStatusCell({
       return (
         <button
           type="button"
-          onClick={onSendNow}
+          onClick={onOpen}
           className={`inline-flex w-full items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${styles}`}
           title={`Failed · ${NOT_SENT_REASON_LABEL[reason]}`}
         >
@@ -418,7 +443,7 @@ function SendStatusCell({
       return (
         <button
           type="button"
-          onClick={onSendNow}
+          onClick={onOpen}
           className={`inline-flex w-full items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${styles}`}
           title={`Not sent · ${NOT_SENT_REASON_LABEL[reason]}`}
         >
