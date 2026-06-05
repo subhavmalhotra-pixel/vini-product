@@ -24,6 +24,8 @@ import { MonthlyValueReport as LegacyMonthlyValueReport } from "./emails/legacy/
 import { EndOfCampaignReport as LegacyEndOfCampaignReport } from "./emails/legacy/EndOfCampaignReport";
 import { PostCallSummary as LegacyPostCallSummary } from "./emails/legacy/PostCallSummary";
 
+import { EmailerTracker } from "./tracker/EmailerTracker";
+
 const ALL_SCENARIOS: EmailScenario[] = [
   ...ALL_POST_CALL_SCENARIOS,
   ...ALL_DAILY_SCENARIOS,
@@ -65,6 +67,9 @@ function renderLegacy(scenario: EmailScenario) {
 }
 
 const VERSION_KEY = "vini.emailer.design-version";
+const MODE_KEY = "vini.emailer.mode";
+
+type AppMode = "preview" | "tracker";
 
 export default function App() {
   const [selectedId, setSelectedId] = useState<string>(
@@ -80,12 +85,25 @@ export default function App() {
     } catch {}
     return "new";
   });
+  const [mode, setMode] = useState<AppMode>(() => {
+    try {
+      const stored = window.localStorage.getItem(MODE_KEY);
+      if (stored === "preview" || stored === "tracker") return stored;
+    } catch {}
+    return "preview";
+  });
 
   useEffect(() => {
     try {
       window.localStorage.setItem(VERSION_KEY, version);
     } catch {}
   }, [version]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(MODE_KEY, mode);
+    } catch {}
+  }, [mode]);
 
   const selected = useMemo(
     () => ALL_SCENARIOS.find((s) => s.scenario_id === selectedId) ?? ALL_SCENARIOS[0],
@@ -110,8 +128,22 @@ export default function App() {
     setMobileNavOpen(false);
   };
 
+  // Tracker mode renders a full-screen dashboard (no scenario sidebar).
+  if (mode === "tracker") {
+    return (
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-background">
+        <ModeToggleStrip mode={mode} onChange={setMode} />
+        <div className="flex-1 overflow-hidden">
+          <EmailerTracker />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-background md:flex-row">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-background">
+      <ModeToggleStrip mode={mode} onChange={setMode} />
+      <div className="flex flex-1 overflow-hidden md:flex-row flex-col">
       {/* Mobile top bar — visible below md */}
       <div className="flex flex-shrink-0 items-center justify-between border-b border-border-subtle bg-surface-card px-4 py-3 md:hidden">
         <div className="min-w-0 flex-1">
@@ -177,6 +209,57 @@ export default function App() {
           <SuppressedSendOverlay reason={suppressionReason} />
         ) : null}
       </main>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Top mode toggle · Email previews ↔ Rooftop tracker
+   ============================================================ */
+function ModeToggleStrip({
+  mode,
+  onChange,
+}: {
+  mode: AppMode;
+  onChange: (m: AppMode) => void;
+}) {
+  return (
+    <div className="flex flex-shrink-0 items-center gap-2 border-b border-border-subtle bg-surface-card px-4 py-2">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Vini Emailer
+      </span>
+      <div className="inline-flex overflow-hidden rounded-md border border-border-subtle">
+        <button
+          type="button"
+          onClick={() => onChange("preview")}
+          aria-pressed={mode === "preview"}
+          className={`px-3 py-1 text-[12px] font-semibold transition-colors duration-150 ${
+            mode === "preview"
+              ? "bg-brand-primary text-white"
+              : "bg-surface-card text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          Email previews
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange("tracker")}
+          aria-pressed={mode === "tracker"}
+          className={`px-3 py-1 text-[12px] font-semibold transition-colors duration-150 ${
+            mode === "tracker"
+              ? "bg-brand-primary text-white"
+              : "bg-surface-card text-text-secondary hover:bg-surface-subtle"
+          }`}
+        >
+          Rooftop tracker
+        </button>
+      </div>
+      <span className="text-[11px] text-text-muted">
+        {mode === "preview"
+          ? "Dealer-facing email templates · click a scenario to render"
+          : "CSM-ops dashboard · per-rooftop send status with click-to-send"}
+      </span>
     </div>
   );
 }
