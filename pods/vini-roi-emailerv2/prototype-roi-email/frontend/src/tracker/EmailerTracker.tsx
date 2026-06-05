@@ -1,9 +1,13 @@
 import { useMemo, useState } from "react";
 import {
+  NOT_SENT_REASON_CTA,
+  NOT_SENT_REASON_LABEL,
   ROOFTOPS,
   TRACKER_META,
   countStatus,
+  reasonBreakdown,
   type Cadence,
+  type NotSentReason,
   type RooftopRow,
   type SendCell,
   type SendStatus,
@@ -25,6 +29,7 @@ export function EmailerTracker() {
   const [csmFilter, setCsmFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<SendStatus | "all" | "any_issue">("all");
   const [groupFilter, setGroupFilter] = useState<string>("all");
+  const [reasonFilter, setReasonFilter] = useState<NotSentReason | "all">("all");
 
   // Track click-to-send / click-to-retry state per (rooftop, date, cadence)
   // Local-only: in production this calls an API to enqueue the send.
@@ -60,9 +65,14 @@ export function EmailerTracker() {
         const hasStatus = cells.slice(0, colCount).some((c) => c.status === statusFilter);
         if (!hasStatus) return false;
       }
+      if (reasonFilter !== "all") {
+        if (r.current_block !== reasonFilter) return false;
+      }
       return true;
     });
-  }, [search, csmFilter, statusFilter, groupFilter, cadence, colCount]);
+  }, [search, csmFilter, statusFilter, groupFilter, reasonFilter, cadence, colCount]);
+
+  const breakdown = useMemo(() => reasonBreakdown(ROOFTOPS), []);
 
   const statusCounts = useMemo(
     () => countStatus(filtered, cadence, colCount),
@@ -91,6 +101,8 @@ export function EmailerTracker() {
               <span className="h-1.5 w-1.5 rounded-full bg-positive" />
               <span className="tabular">{statusCounts.sent.toLocaleString()}</span> sent
             </span>
+            <span>·</span>
+            <span className="tabular">{TRACKER_META.source}</span>
             <span>·</span>
             <span className="tabular">synced {TRACKER_META.lastSyncedMinutesAgo} min ago</span>
             <button
@@ -132,6 +144,50 @@ export function EmailerTracker() {
         </div>
       </header>
 
+      {/* CSM action board · groups not-sent rooftops by reason · click to filter */}
+      {breakdown.length > 0 ? (
+        <div className="flex-shrink-0 border-b border-border-subtle bg-warning-soft/40 px-6 py-3">
+          <div className="flex flex-wrap items-baseline gap-3">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-warning">
+              CSM action board ·{" "}
+              {breakdown.reduce((s, b) => s + b.count, 0)} rooftops blocked
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {breakdown.map((b) => {
+                const active = reasonFilter === b.reason;
+                return (
+                  <button
+                    key={b.reason}
+                    type="button"
+                    onClick={() =>
+                      setReasonFilter(active ? "all" : b.reason)
+                    }
+                    title={b.rooftops.join(", ")}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-colors duration-150 ${
+                      active
+                        ? "border-warning bg-warning text-white"
+                        : "border-warning/40 bg-surface-card text-warning hover:bg-warning-soft"
+                    }`}
+                  >
+                    <span className="tabular">{b.count}</span>
+                    {NOT_SENT_REASON_LABEL[b.reason]}
+                  </button>
+                );
+              })}
+              {reasonFilter !== "all" ? (
+                <button
+                  type="button"
+                  onClick={() => setReasonFilter("all")}
+                  className="text-[11px] font-semibold text-text-secondary hover:underline"
+                >
+                  Clear reason
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Filter strip */}
       <div className="flex-shrink-0 border-b border-border-subtle bg-surface-card px-6 py-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +210,7 @@ export function EmailerTracker() {
             value={groupFilter}
             onChange={setGroupFilter}
             options={[
-              { value: "all", label: "All groups" },
+              { value: "all", label: "All enterprises" },
               ...TRACKER_META.groups.map((g) => ({ value: g, label: g })),
             ]}
           />
@@ -177,6 +233,7 @@ export function EmailerTracker() {
               setCsmFilter("all");
               setGroupFilter("all");
               setStatusFilter("all");
+              setReasonFilter("all");
             }}
             className="ml-1 text-[11px] font-semibold text-brand-primary hover:underline"
           >
@@ -324,33 +381,51 @@ function SendStatusCell({
       return (
         <span
           className="inline-flex w-full items-center justify-center rounded-md bg-warning-soft px-2 py-1 text-[11px] font-semibold text-warning"
-          title={`Suppressed · reason: ${cell.suppression_reason ?? "policy"}`}
+          title={
+            cell.reason
+              ? `Suppressed · ${NOT_SENT_REASON_LABEL[cell.reason]}`
+              : "Suppressed"
+          }
         >
           Suppr.
         </span>
       );
-    case "failed":
+    case "failed": {
+      const reason = cell.reason ?? "smtp_timeout";
+      const cta = NOT_SENT_REASON_CTA[reason];
+      const styles =
+        cta.tone === "warn"
+          ? "border-warning/40 bg-warning-soft text-warning hover:bg-warning-soft/80"
+          : "border-negative/40 bg-negative-soft text-negative hover:bg-negative-soft/80";
       return (
         <button
           type="button"
           onClick={onSendNow}
-          className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-negative/40 bg-negative-soft px-2 py-1 text-[11px] font-semibold text-negative hover:bg-negative-soft/80"
-          title={`Failed · ${cell.suppression_reason ?? "unknown"} · click to retry`}
+          className={`inline-flex w-full items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${styles}`}
+          title={`Failed · ${NOT_SENT_REASON_LABEL[reason]}`}
         >
-          ⚠ Retry
+          {cta.label}
         </button>
       );
-    case "not_sent":
+    }
+    case "not_sent": {
+      const reason = cell.reason ?? "scheduler_skipped";
+      const cta = NOT_SENT_REASON_CTA[reason];
+      const styles =
+        cta.tone === "warn"
+          ? "border-warning/40 bg-warning-soft text-warning hover:bg-warning-soft/80"
+          : "border-negative/40 bg-negative-soft text-negative hover:bg-negative-soft/80";
       return (
         <button
           type="button"
           onClick={onSendNow}
-          className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-negative/40 bg-negative-soft px-2 py-1 text-[11px] font-semibold text-negative hover:bg-negative-soft/80"
-          title={`Not sent · ${cell.suppression_reason ?? "scheduler skipped"} · click to send now`}
+          className={`inline-flex w-full items-center justify-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold ${styles}`}
+          title={`Not sent · ${NOT_SENT_REASON_LABEL[reason]}`}
         >
-          → Send now
+          {cta.label}
         </button>
       );
+    }
     case "not_subscribed":
       return (
         <span className="inline-flex w-full items-center justify-center rounded-md bg-surface-subtle px-2 py-1 text-[11px] text-text-muted">
