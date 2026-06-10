@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   NOT_SENT_REASON_LABEL,
   type DeptKind,
+  type DigestMetrics,
   type NotSentReason,
   type Recipient,
   type RooftopRow,
   type SendCell,
 } from "./mockData";
+import { DailyDigest as LegacyDailyDigest } from "../emails/legacy/DailyDigest";
+import { metricsToDailyDigest } from "./digestData";
+import { isPipelineConfigured, runDryPipeline, sendViaServer } from "./pipeline";
+import { buildConsoleLinks } from "./links";
 
 /**
  * Cell-action drawer.
@@ -28,6 +33,8 @@ type DrawerProps = {
   cell: SendCell | null;
   onClose: () => void;
   onSend: (rooftopId: string, date: string, cadence: SendCell["cadence"]) => void;
+  /** Reload tracker data after a dry-run pipeline trigger (rows change status). */
+  onReload?: () => void;
 };
 
 const REASON_HELPER: Record<NotSentReason, string> = {
@@ -43,7 +50,7 @@ const REASON_HELPER: Record<NotSentReason, string> = {
   silent_day: "No customer activity for this rooftop on this day.",
 };
 
-export function RooftopCellDrawer({ rooftop, cell, onClose, onSend }: DrawerProps) {
+export function RooftopCellDrawer({ rooftop, cell, onClose, onSend, onReload }: DrawerProps) {
   const open = !!(rooftop && cell);
   const [mounted, setMounted] = useState(open);
   const [visible, setVisible] = useState(false);
@@ -68,87 +75,143 @@ export function RooftopCellDrawer({ rooftop, cell, onClose, onSend }: DrawerProp
 
   if (!mounted || !rooftop || !cell) return null;
 
-  const isSent = cell.status === "sent" || cell.status === "suppressed";
+  const status = cell.status;
+  const runs = cell.runs ?? [];
+  // the run that drives this cell (matching status), else the first run
+  const primary = runs.find((r) => r.status === status) ?? runs[0] ?? null;
+  const metrics = primary?.metrics;
+  const dept = primary?.department;
+  const rawReason = primary?.reason;
   const reason = cell.reason ?? "scheduler_skipped";
+  const isSent = status === "sent";
+  const isSuppressed = status === "suppressed";
+
+  const statusLabel = isSent ? "Sent" : isSuppressed ? "Suppressed" : NOT_SENT_REASON_LABEL[reason];
+  const statusChip = isSent
+    ? "bg-positive/10 text-positive"
+    : isSuppressed
+    ? "bg-warning-soft text-warning"
+    : "bg-negative-soft text-negative";
 
   return (
-    <>
-      <div
-        className={`fixed inset-0 z-40 bg-text-primary/30 backdrop-blur-[2px] transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
-        onClick={onClose}
-        aria-hidden
-      />
-      <aside
-        className={`fixed inset-y-0 right-0 z-50 flex w-[440px] max-w-full flex-col bg-surface-card shadow-email transition-all duration-200 ${visible ? "translate-x-0 opacity-100" : "translate-x-4 opacity-0"}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${rooftop.name} send details`}
-      >
-        <header className="flex items-start justify-between gap-3 border-b border-border-subtle px-5 py-4">
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-              {cell.cadence} · {formatHumanDate(cell.date)}
-            </div>
-            <h2 className="mt-0.5 text-[15px] font-semibold leading-tight text-text-primary">{rooftop.name}</h2>
-            <div
-              className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                isSent ? "bg-positive/10 text-positive" : "bg-warning-soft text-warning"
-              }`}
-            >
-              {isSent ? "Sent" : NOT_SENT_REASON_LABEL[reason]}
-            </div>
+    <div
+      className={`fixed inset-0 z-50 flex flex-col bg-surface-background transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${rooftop.name} daily digest`}
+    >
+      {/* Top bar */}
+      <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-border-subtle bg-surface-card px-6 py-3">
+        <div className="min-w-0">
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+            {cell.cadence} · {formatHumanDate(cell.date)}{dept ? ` · ${dept}` : ""}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:bg-surface-subtle hover:text-text-secondary"
-          >
-            ✕
-          </button>
-        </header>
-
-        <div className="flex-1 overflow-y-auto">
-          {isSent ? (
-            <>
-              <Section eyebrow="1 · Snippet" title="What the dealer received">
-                <EmailSnippetCard rooftop={rooftop} />
-              </Section>
-              <Section eyebrow="2 · Recipients" title="Who received & who didn't">
-                <RecipientManager
-                  rooftop={rooftop}
-                  onSend={() => onSend(rooftop.rooftop_id, cell.date, cell.cadence)}
-                />
-              </Section>
-            </>
-          ) : (
-            <>
-              <Section eyebrow="1 · Reason" title={NOT_SENT_REASON_LABEL[reason]}>
-                <p className="text-[13px] leading-relaxed text-text-secondary">{REASON_HELPER[reason]}</p>
-                <ReasonFieldStatus rooftop={rooftop} reason={reason} />
-              </Section>
-              <Section eyebrow="2 · Snippet" title="What the dealer would have received">
-                <EmailSnippetCard rooftop={rooftop} numbersAdded />
-                <p className="mt-2 text-[11px] text-text-muted">
-                  Numbers populated from this rooftop's last 7-day activity. No email was sent — fix the data
-                  below to dispatch.
-                </p>
-              </Section>
-              <Section eyebrow="3 · Fix" title="Fill missing data & send">
-                <FixDataForm
-                  rooftop={rooftop}
-                  reason={reason}
-                  onSend={() => {
-                    onSend(rooftop.rooftop_id, cell.date, cell.cadence);
-                    onClose();
-                  }}
-                />
-              </Section>
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <h2 className="truncate text-[16px] font-bold leading-tight text-text-primary">{rooftop.name}</h2>
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusChip}`}>
+              {statusLabel}
+            </span>
+          </div>
         </div>
-      </aside>
-    </>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-shrink-0 rounded-md border border-border-subtle bg-surface-card px-3 py-1.5 text-[12px] font-semibold text-text-secondary hover:bg-surface-subtle"
+        >
+          Close ✕
+        </button>
+      </header>
+
+      {/* Reason banner (non-sent) */}
+      {!isSent ? (
+        <div
+          className={`flex-shrink-0 border-b border-border-subtle px-6 py-2 text-[12px] leading-snug ${
+            isSuppressed ? "bg-warning-soft text-warning" : "bg-negative-soft text-negative"
+          }`}
+        >
+          {isSuppressed
+            ? rawReason === "dry_run"
+              ? "Held by dry-run mode — the digest was generated but emails are OFF. “Re-run (dry-run)” regenerates it; no email is sent."
+              : `Suppressed${rawReason ? ` · ${rawReason}` : ""}`
+            : `Not sent · ${NOT_SENT_REASON_LABEL[reason]} — ${REASON_HELPER[reason]}`}
+        </div>
+      ) : null}
+
+      {/* Body: full email (left) + actions rail (right) */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto grid max-w-[1180px] grid-cols-1 gap-6 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="min-w-0">
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+              {isSent
+                ? primary?.renderedHtml
+                  ? "Email sent · exact HTML"
+                  : "Email sent · re-rendered from stored metrics"
+                : "Daily digest · preview (not sent)"}
+            </div>
+            <DigestEmail rooftop={rooftop} cell={cell} metrics={metrics} dept={dept} renderedHtml={primary?.renderedHtml} />
+          </div>
+
+          <aside className="space-y-4">
+            {isSent ? (
+              <>
+                <Section eyebrow="Sent to" title="Email IDs on this send">
+                  <SentToList recipients={primary?.recipients} />
+                </Section>
+                <Section eyebrow="Recipients" title="Manage recipients">
+                  <RecipientManager rooftop={rooftop} onSend={() => onSend(rooftop.rooftop_id, cell.date, cell.cadence)} />
+                </Section>
+              </>
+            ) : isSuppressed ? (
+              <>
+                <Section eyebrow="Will send to" title="Recipients on send">
+                  <SentToList recipients={primary?.recipients} pending />
+                </Section>
+                <Section eyebrow="Suppressed" title="Why it was held back">
+                  <SuppressBanner rawReason={rawReason} />
+                </Section>
+                <Section eyebrow="Dry-run" title="Re-run this digest (dry-run)">
+                  <DryRunSection
+                    rooftop={rooftop}
+                    onDone={() => {
+                      onReload?.();
+                      onClose();
+                    }}
+                  />
+                </Section>
+                <Section eyebrow="Live send" title="Send now (real email)">
+                  <SendNowLiveSection
+                    rooftop={rooftop}
+                    recipients={primary?.recipients}
+                    metrics={metrics}
+                    dept={dept}
+                    reportDate={cell.date}
+                    onSent={() => {
+                      onReload?.();
+                    }}
+                  />
+                </Section>
+              </>
+            ) : (
+              <>
+                <Section eyebrow="Reason" title={NOT_SENT_REASON_LABEL[reason]}>
+                  <ReasonFieldStatus rooftop={rooftop} reason={reason} />
+                </Section>
+                <Section eyebrow="Fix & send" title="Fill data & send now">
+                  <FixDataForm
+                    rooftop={rooftop}
+                    reason={reason}
+                    onSend={() => {
+                      onSend(rooftop.rooftop_id, cell.date, cell.cadence);
+                      onClose();
+                    }}
+                  />
+                </Section>
+              </>
+            )}
+          </aside>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -479,7 +542,236 @@ function FixDataForm({
 }
 
 /* ============================================================
-   Email snippet preview
+   Complete daily-digest email (real template, from stored metrics)
+   ============================================================ */
+function DigestEmail({
+  rooftop,
+  cell,
+  metrics,
+  dept,
+  renderedHtml,
+}: {
+  rooftop: RooftopRow;
+  cell: SendCell;
+  metrics?: DigestMetrics;
+  dept?: DeptKind;
+  renderedHtml?: string;
+}) {
+  // ALWAYS render the PREVIOUS email (EmailShell v1 — emails/legacy/DailyDigest)
+  // from the stored metrics. This is the exact "Previous" template in ROI emailer v2.
+  if (metrics) {
+    const data = metricsToDailyDigest(metrics, {
+      rooftopName: rooftop.name,
+      dept,
+      teamId: rooftop.team_id,
+      status: cell.status,
+    });
+    const links = buildConsoleLinks({
+      enterpriseId: rooftop.enterprise_id,
+      teamId: rooftop.team_id,
+      dept,
+      reportDate: (metrics as { reportDate?: string }).reportDate ?? cell.date,
+      timezone: rooftop.timezone,
+    });
+    return (
+      <div className="rounded-xl border border-border-subtle bg-surface-background p-3 sm:p-5">
+        <LegacyDailyDigest data={data} links={links} />
+      </div>
+    );
+  }
+  // No metrics but exact provider HTML stored (real send) → show it verbatim.
+  if (renderedHtml) {
+    return (
+      <div className="overflow-hidden rounded-xl border border-border-subtle bg-white">
+        <iframe title="Email sent" srcDoc={renderedHtml} className="block w-full bg-white" style={{ height: 700, border: 0 }} />
+      </div>
+    );
+  }
+  // Nothing stored → lightweight stub.
+  return <EmailSnippetCard rooftop={rooftop} />;
+}
+
+/* ============================================================
+   Sent-to email IDs (sent cells)
+   ============================================================ */
+function SentToList({
+  recipients,
+  pending,
+}: {
+  recipients?: { email: string; name?: string; received?: boolean; bounced?: boolean }[];
+  pending?: boolean; // true for suppressed (not sent yet) → "Will send"
+}) {
+  const list = recipients ?? [];
+  if (!list.length)
+    return <p className="text-[12px] text-text-muted">No recipients configured for this department.</p>;
+  return (
+    <ul className="space-y-1.5">
+      {list.map((r, i) => (
+        <li
+          key={i}
+          className="flex items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-background px-3 py-2"
+        >
+          <span className="min-w-0 truncate text-[12px] text-text-primary">{r.email}</span>
+          <span
+            className={`shrink-0 text-[11px] font-semibold ${
+              r.bounced ? "text-negative" : r.received ? "text-positive" : pending ? "text-info" : "text-text-muted"
+            }`}
+          >
+            {r.bounced ? "Bounced" : r.received ? "Received" : pending ? "Will send" : "Sent"}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ============================================================
+   Suppress reason banner
+   ============================================================ */
+function SuppressBanner({ rawReason }: { rawReason?: string }) {
+  const dryRun = rawReason === "dry_run";
+  return (
+    <div className="rounded-md border border-warning/40 bg-warning-soft px-3 py-2.5">
+      <div className="text-[12px] font-semibold text-warning">
+        {dryRun ? "Held by dry-run mode" : `Suppressed${rawReason ? ` · ${rawReason}` : ""}`}
+      </div>
+      <p className="mt-1 text-[12px] leading-relaxed text-text-secondary">
+        {dryRun
+          ? "This rooftop had valid, actionable activity, so the digest WAS generated — but emails are OFF (dry-run). Use “Re-run (dry-run)” to regenerate it. Real sending stays disabled until you flip dry-run off and let the scheduled cron run."
+          : "The digest was generated but not sent. Use “Re-run (dry-run)” to regenerate the preview — no email is sent from the tracker."}
+      </p>
+    </div>
+  );
+}
+
+/* ============================================================
+   Dry-run trigger (suppressed cells)
+   Fires the 4-cron pipeline for THIS rooftop in forced dry-run:
+   cron1→2→3 regenerate metrics + HTML, cron4 SUPPRESSES (no email sent).
+   ============================================================ */
+function DryRunSection({ rooftop, onDone }: { rooftop: RooftopRow; onDone: () => void }) {
+  const [state, setState] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [msg, setMsg] = useState<string>("");
+  const click = async () => {
+    setState("running");
+    const r = await runDryPipeline({ teamId: rooftop.team_id });
+    if (r.simulated) {
+      setState("done");
+      setMsg("Simulated (no backend configured).");
+      setTimeout(onDone, 700);
+    } else if (r.ok) {
+      setState("done");
+      const b = r.body as { cron4?: { body?: { suppressed?: number } } } | undefined;
+      setMsg(`Regenerated · ${b?.cron4?.body?.suppressed ?? 0} suppressed (dry-run). No email sent.`);
+      setTimeout(onDone, 900);
+    } else {
+      setState("error");
+      setMsg(r.status === 404 ? "Functions not deployed yet." : r.error ?? `Error ${r.status ?? ""}`);
+    }
+  };
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={click}
+        disabled={state === "running" || state === "done"}
+        className={`w-full rounded-md px-3 py-2 text-[12px] font-semibold ${
+          state === "done"
+            ? "bg-positive/10 text-positive"
+            : state === "error"
+            ? "bg-negative-soft text-negative"
+            : "bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-60"
+        }`}
+      >
+        {state === "running" ? "Running pipeline…" : state === "done" ? "✓ Regenerated (dry-run)" : state === "error" ? "Failed — retry" : "Re-run (dry-run)"}
+      </button>
+      <p className="text-[10px] text-text-muted">
+        {msg ||
+          (isPipelineConfigured
+            ? "Runs cron1→4 for this rooftop with dry-run forced ON. Regenerates the digest + HTML and records it suppressed — no email is sent."
+            : "No backend configured (VITE_SUPABASE_URL) — this simulates the run.")}
+      </p>
+    </div>
+  );
+}
+
+/* ============================================================
+   Send-now LIVE — REALLY sends, on click, via the local send server
+   (email-render/server.cjs), which renders the actual component and POSTs to
+   mail.spyne.ai with the server-held token. Click = send. No confirm.
+   ============================================================ */
+function SendNowLiveSection({
+  rooftop,
+  recipients,
+  metrics,
+  dept,
+  reportDate,
+  onSent,
+}: {
+  rooftop: RooftopRow;
+  recipients?: { email: string }[];
+  metrics?: DigestMetrics;
+  dept?: DeptKind;
+  reportDate?: string;
+  onSent: () => void;
+}) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [msg, setMsg] = useState("");
+  const inFlight = useRef(false); // guarantees ONE send per click (no double-fire)
+  const emails = (recipients ?? []).map((r) => r.email).filter(Boolean);
+
+  const click = async () => {
+    if (inFlight.current) return; // already sending — ignore extra clicks
+    if (!emails.length) { setState("error"); setMsg("No recipients configured for this department."); return; }
+    if (!metrics) { setState("error"); setMsg("No metrics for this rooftop yet — resync first."); return; }
+    inFlight.current = true;
+    setState("sending"); setMsg("");
+    const r = await sendViaServer({
+      teamId: rooftop.team_id,
+      enterpriseId: rooftop.enterprise_id,
+      dept: dept as "sales" | "service" | undefined,
+      rooftopName: rooftop.name,
+      timezone: rooftop.timezone,
+      reportDate,
+      metrics: metrics as unknown as Record<string, unknown>,
+      recipients: emails,
+    });
+    if (r.ok) {
+      setState("sent");
+      setMsg(`Sent ✓ → ${(r.to ?? emails).join(", ")}`);
+      setTimeout(onSent, 1200);
+    } else {
+      setState("error");
+      setMsg(r.error ?? `Send failed (HTTP ${r.status ?? "?"})`);
+    }
+    inFlight.current = false; // release — a later deliberate click may resend
+  };
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={click}
+        disabled={state === "sending"}
+        className={`w-full rounded-md px-3 py-2 text-[12px] font-semibold ${
+          state === "sent"
+            ? "bg-positive/10 text-positive"
+            : state === "error"
+            ? "bg-negative-soft text-negative"
+            : "bg-negative text-white hover:opacity-90 disabled:opacity-60"
+        }`}
+      >
+        {state === "sending" ? "Sending…" : state === "sent" ? "✓ Sent — resend" : state === "error" ? "Retry send" : "Send now (real email)"}
+      </button>
+      <p className="text-[10px] text-text-muted">
+        {msg || `Clicking sends a real email to ${emails.join(", ") || "the recipients"} via mail.spyne.ai (renders the actual digest).`}
+      </p>
+    </div>
+  );
+}
+
+/* ============================================================
+   Email snippet preview (stub fallback)
    ============================================================ */
 function EmailSnippetCard({ rooftop, numbersAdded }: { rooftop: RooftopRow; numbersAdded?: boolean }) {
   const stub = useMemo(() => generateStub(rooftop.rooftop_id), [rooftop.rooftop_id]);

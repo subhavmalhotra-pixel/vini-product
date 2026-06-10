@@ -9,6 +9,8 @@ import { EdgeCaseBanner } from "../../components/EdgeCaseBanner";
 
 type DailyDigestProps = {
   data: DailyDigestData;
+  /** Real console deep links (tracker preview). When omitted, placeholder hrefs are used. */
+  links?: { appointments?: string; conversations?: string; actionItems?: string };
 };
 
 function formatDate(iso: string): string {
@@ -35,7 +37,7 @@ function addDaysISO(iso: string, days: number): string {
   });
 }
 
-export function DailyDigest({ data }: DailyDigestProps) {
+export function DailyDigest({ data, links }: DailyDigestProps) {
   const yesterday = data.hero.yesterday_appts.yesterday ?? 0;
   const mtd = data.hero.yesterday_appts.mtd ?? data.hero.mtd_appts.mtd ?? 0;
   const isZeroYesterday = yesterday === 0;
@@ -151,18 +153,18 @@ export function DailyDigest({ data }: DailyDigestProps) {
         <div className="mt-6 flex flex-wrap items-center gap-4">
           <CTAButton
             label="View today's appointments"
-            href="/console/appointments?date=today"
+            href={links?.appointments ?? "/console/appointments?date=today"}
           />
           <CTAButton
             label="Open conversation inbox"
-            href="/console/inbox"
+            href={links?.conversations ?? "/console/inbox"}
             variant="secondary"
           />
         </div>
       </section>
 
       {/* Action Required */}
-      <ActionRequiredSection items={data.action_required} />
+      <ActionRequiredSection items={data.action_required} reviewUrl={links?.actionItems} />
 
       {/* Inbound */}
       {data.inbound ? (

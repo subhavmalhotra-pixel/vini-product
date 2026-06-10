@@ -15,9 +15,11 @@ const ACTION_LABELS: Record<ActionType, string> = {
 
 type ActionRequiredSectionProps = {
   items: ActionItem[];
+  /** Real console action-items deep link (tracker preview). Falls back to placeholder. */
+  reviewUrl?: string;
 };
 
-export function ActionRequiredSection({ items }: ActionRequiredSectionProps) {
+export function ActionRequiredSection({ items, reviewUrl }: ActionRequiredSectionProps) {
   if (!items.length) return null;
 
   return (
@@ -49,7 +51,7 @@ export function ActionRequiredSection({ items }: ActionRequiredSectionProps) {
       <div className="mt-5">
         <CTAButton
           label="Review action items"
-          href="/console/inbox?view=action_required"
+          href={reviewUrl ?? "/console/inbox?view=action_required"}
         />
       </div>
     </section>

@@ -1,20 +1,21 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  AGENT_LABEL,
   NOT_SENT_REASON_CTA,
   NOT_SENT_REASON_LABEL,
   ROOFTOPS,
   TRACKER_META,
-  agentMatrix,
-  computeFunnel,
   computeSummary,
   reasonBreakdown,
   type Cadence,
+  type DeptKind,
   type NotSentReason,
   type RooftopRow,
   type SendCell,
 } from "./mockData";
+import { loadRooftops } from "./dataSource";
+import { supabase } from "./supabaseClient";
 import { RooftopCellDrawer } from "./RooftopCellDrawer";
+import { isPipelineConfigured, runDryPipeline, runRespectPipeline } from "./pipeline";
 
 export function EmailerTracker() {
   const [cadence, setCadence] = useState<Cadence>("daily");
@@ -25,123 +26,213 @@ export function EmailerTracker() {
   const [sentNow, setSentNow] = useState<Record<string, true>>({});
   const [activeCell, setActiveCell] = useState<{ rooftop: RooftopRow; cell: SendCell } | null>(null);
 
+  // Live data (roi_digest_runs + mailservice engagement), mock fallback.
+  const [rooftops, setRooftops] = useState<RooftopRow[]>(ROOFTOPS);
+  const [today, setToday] = useState<string>(TRACKER_META.today);
+  const [source, setSource] = useState<string>(TRACKER_META.source);
+  const [lastSynced, setLastSynced] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(false);
+  // Global manual pipeline triggers
+  const [dryRunState, setDryRunState] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [dryRunMsg, setDryRunMsg] = useState("");
+  const [liveState, setLiveState] = useState<"idle" | "running" | "done" | "error">("idle");
+  const [liveMsg, setLiveMsg] = useState("");
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await loadRooftops();
+      setRooftops(res.rooftops);
+      setToday(res.today);
+      setSource(res.source === "supabase" ? "Supabase · roi_digest_runs" : TRACKER_META.source);
+      setLastSynced(res.lastSynced);
+    } catch (e) {
+      console.warn("[tracker] load failed:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  // DRY-RUN ALL (preview): forced dry — regenerates every rooftop's HTML, sends NOTHING.
+  const runDryRunAll = useCallback(async () => {
+    setDryRunState("running");
+    setDryRunMsg("");
+    const r = await runDryPipeline({}); // no team → all rooftops; dry=true is hard-coded
+    if (r.simulated) {
+      setDryRunState("done");
+      setDryRunMsg("Simulated — no backend configured.");
+    } else if (r.ok) {
+      setDryRunState("done");
+      setDryRunMsg(`Dry-run preview done · ${r.counts?.queued ?? 0} rendered · ${r.counts?.suppressed ?? 0} suppressed · 0 sent.`);
+      await reload();
+    } else {
+      setDryRunState("error");
+      setDryRunMsg(r.status === 404 ? "Functions not deployed yet." : r.error ?? `Error ${r.status ?? ""}`);
+    }
+    setTimeout(() => setDryRunState("idle"), 4000);
+  }, [reload]);
+
+  // SEND LIVE (respect flags): real emails to live rooftops (dry_run=false), dry ones suppressed.
+  const runSendLiveAll = useCallback(async () => {
+    const liveCount = rooftops.filter((r) => r.dryRun === false).length;
+    if (liveCount === 0) {
+      setLiveState("error");
+      setLiveMsg("No live rooftops. Flip a rooftop's toggle to “Live” first — dry rooftops are never emailed.");
+      setTimeout(() => setLiveState("idle"), 5000);
+      return;
+    }
+    const ok = window.confirm(
+      `Send REAL emails now?\n\n${liveCount} live rooftop(s) (dry_run = false) will receive their digest via mail.spyne.ai.\nDry-run rooftops are skipped. This is not a preview.`,
+    );
+    if (!ok) return;
+    setLiveState("running");
+    setLiveMsg("");
+    const r = await runRespectPipeline({}); // no team → all rooftops; honours each dry_run flag
+    if (r.simulated) {
+      setLiveState("done");
+      setLiveMsg("Simulated — no backend configured. Nothing sent.");
+    } else if (r.authFailed || r.status === 401 || r.status === 403) {
+      setLiveState("error");
+      setLiveMsg("Mail token rejected/expired. Open a live rooftop’s “Send now” to paste a fresh token, then retry.");
+    } else if (r.status === 404) {
+      setLiveState("error");
+      setLiveMsg("Functions not deployed yet.");
+    } else if (r.ok) {
+      setLiveState("done");
+      setLiveMsg(`Sent · ${r.counts?.sent ?? 0} live · ${r.counts?.suppressed ?? 0} held (dry) · ${r.counts?.errors ?? 0} errors.`);
+      await reload();
+    } else {
+      setLiveState("error");
+      setLiveMsg(r.error ?? `Error ${r.status ?? ""}`);
+    }
+    setTimeout(() => setLiveState("idle"), 6000);
+  }, [rooftops, reload]);
+
+  const liveCount = useMemo(() => rooftops.filter((r) => r.dryRun === false).length, [rooftops]);
+
   const cellKey = (r: RooftopRow, c: SendCell) => `${r.rooftop_id}::${c.cadence}::${c.date}`;
   const colCount = cadence === "daily" ? 10 : cadence === "weekly" ? 8 : 6;
+  const csms = useMemo(() => Array.from(new Set(rooftops.map((r) => r.csm))), [rooftops]);
+  const syncedMinAgo = Math.max(0, Math.round((Date.now() - lastSynced.getTime()) / 60000));
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return ROOFTOPS.filter((r) => {
+    return rooftops.filter((r) => {
       if (q && !r.name.toLowerCase().includes(q) && !r.csm.toLowerCase().includes(q)) return false;
       if (csmFilter !== "all" && r.csm !== csmFilter) return false;
-      if (deptFilter !== "all" && !r.departments.some((d) => d.kind === deptFilter && d.live)) return false;
+      if (deptFilter !== "all" && r.department !== deptFilter) return false;
       if (reasonFilter !== "all" && r.current_block !== reasonFilter) return false;
       return true;
     });
-  }, [search, csmFilter, deptFilter, reasonFilter]);
+  }, [rooftops, search, csmFilter, deptFilter, reasonFilter]);
 
-  const summary = useMemo(() => computeSummary(ROOFTOPS, cadence), [cadence]);
-  const funnel = useMemo(() => computeFunnel(ROOFTOPS, cadence), [cadence]);
-  const breakdown = useMemo(() => reasonBreakdown(ROOFTOPS), []);
+  const summary = useMemo(() => computeSummary(rooftops, cadence), [rooftops, cadence]);
+  const breakdown = useMemo(() => reasonBreakdown(rooftops), [rooftops]);
+  const teamCount = useMemo(() => new Set(rooftops.map((r) => r.team_id)).size, [rooftops]);
+  const salesRows = rooftops.filter((r) => r.department === "sales").length;
+  const serviceRows = rooftops.filter((r) => r.department === "service").length;
 
   return (
     <div className="flex h-full flex-col bg-surface-background">
       {/* Header */}
-      <header className="flex-shrink-0 border-b border-border-subtle bg-surface-card px-6 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-[20px] font-bold tracking-tight text-text-primary">
-              Vini Emailer · Rooftop Tracker
+      <header className="flex-shrink-0 border-b border-border-subtle bg-surface-card px-6 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-baseline gap-2">
+            <h1 className="text-[15px] font-bold tracking-tight text-text-primary">
+              Rooftop Tracker
             </h1>
-            <p className="mt-0.5 text-[12px] text-text-secondary">
-              Agents live · departments live · digest send-status across{" "}
-              <span className="font-semibold text-text-primary">{TRACKER_META.totalRooftops}</span>{" "}
-              rooftops.
-            </p>
+            <span className="text-[11px] text-text-secondary">
+              {teamCount} rooftops · {rooftops.length} dept trackers
+            </span>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-text-muted">
-            <span className="tabular">{TRACKER_META.source}</span>
+            <span className="tabular">{source}</span>
             <span>·</span>
-            <span className="tabular">synced {TRACKER_META.lastSyncedMinutesAgo} min ago</span>
+            <span className="tabular">synced {syncedMinAgo} min ago</span>
             <button
               type="button"
-              className="ml-1 rounded-md border border-border-subtle bg-surface-card px-2.5 py-1 text-[11px] font-semibold text-text-primary hover:bg-surface-subtle"
+              onClick={() => void reload()}
+              disabled={loading}
+              className="ml-1 rounded-md border border-border-subtle bg-surface-card px-2.5 py-1 text-[11px] font-semibold text-text-primary hover:bg-surface-subtle disabled:opacity-50"
             >
-              ⟳ Refresh
+              {loading ? "Refreshing…" : "⟳ Refresh"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void runDryRunAll()}
+              disabled={dryRunState === "running"}
+              title="Fire cron1→4 for every rooftop with dry-run forced ON. Renders + records each digest as suppressed. No email is sent."
+              className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold ${
+                dryRunState === "error"
+                  ? "border-negative/40 bg-negative-soft text-negative"
+                  : dryRunState === "done"
+                  ? "border-positive/40 bg-positive/10 text-positive"
+                  : "border-border-subtle bg-surface-card text-text-primary hover:bg-surface-subtle"
+              } disabled:opacity-60`}
+            >
+              {dryRunState === "running"
+                ? "Running…"
+                : dryRunState === "done"
+                ? "✓ Dry-run done"
+                : dryRunState === "error"
+                ? "Dry-run failed"
+                : "Dry-run all (preview)"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void runSendLiveAll()}
+              disabled={liveState === "running"}
+              title={
+                liveCount > 0
+                  ? `Send REAL emails to the ${liveCount} live rooftop(s) (dry_run=false). Dry rooftops are skipped.`
+                  : "No live rooftops — flip a rooftop to Live first. Dry rooftops are never emailed."
+              }
+              className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold ${
+                liveState === "error"
+                  ? "border-negative/40 bg-negative-soft text-negative"
+                  : liveState === "done"
+                  ? "border-positive/40 bg-positive/10 text-positive"
+                  : liveCount > 0
+                  ? "border-negative/50 bg-negative text-white hover:opacity-90"
+                  : "border-border-subtle bg-surface-subtle text-text-muted"
+              } disabled:opacity-60`}
+            >
+              {liveState === "running"
+                ? "Sending…"
+                : liveState === "done"
+                ? "✓ Sent live"
+                : liveState === "error"
+                ? "Send failed"
+                : `▶ Send live (${liveCount})`}
             </button>
           </div>
         </div>
+        {dryRunMsg || liveMsg ? (
+          <div className="mt-1 text-right text-[10px] text-text-muted">
+            {liveMsg || dryRunMsg}
+            {!isPipelineConfigured ? " · set VITE_SUPABASE_URL + deploy functions to run for real" : ""}
+          </div>
+        ) : null}
       </header>
 
-      {/* 1 · Summary cards */}
-      <div className="flex-shrink-0 border-b border-border-subtle bg-surface-background px-6 py-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {/* Live agents */}
-          <SummaryCard
-            label="Live agents"
-            value={summary.liveAgentsTotal.toString()}
-            sub={`across ${summary.rooftopsWithAgents} rooftops`}
-          >
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <AgentCount label="Sales IB" n={summary.liveAgents.sales_ib} tone="info" />
-              <AgentCount label="Sales OB" n={summary.liveAgents.sales_ob} tone="info" />
-              <AgentCount label="Service IB" n={summary.liveAgents.service_ib} tone="positive" />
-              <AgentCount label="Service OB" n={summary.liveAgents.service_ob} tone="positive" />
-            </div>
-          </SummaryCard>
-
-          {/* Live departments */}
-          <SummaryCard
-            label="Live departments"
-            value={summary.liveDepartments.total.toString()}
-            sub="sales + service across rooftops"
-          >
-            <div className="mt-3 flex gap-2">
-              <DeptCount label="Sales" n={summary.liveDepartments.sales} tone="info" />
-              <DeptCount label="Service" n={summary.liveDepartments.service} tone="positive" />
-            </div>
-          </SummaryCard>
-
-          {/* Email status */}
-          <SummaryCard
-            label="Email status · today"
+      {/* Compact stats strip — small, the daily tracker is the focus */}
+      <div className="flex-shrink-0 border-b border-border-subtle bg-surface-background px-6 py-2">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+          <Stat label="Rooftops" value={teamCount} />
+          <Stat label="Dept trackers" value={rooftops.length} />
+          <Stat label="Sales / Service" value={`${salesRows} / ${serviceRows}`} />
+          <span className="h-4 w-px bg-border-subtle" />
+          <Stat label="Sent today" value={summary.emailStatus.sent} tone="positive" />
+          <Stat label="Not sent" value={summary.emailStatus.notSent} tone="negative" />
+          <Stat
+            label="Sent rate"
             value={`${summary.emailStatus.sentRatePct}%`}
-            sub="sent rate"
-            valueTone={summary.emailStatus.sentRatePct >= 50 ? "positive" : "negative"}
-          >
-            <div className="mt-3 flex gap-2">
-              <DeptCount label="Sent" n={summary.emailStatus.sent} tone="positive" />
-              <DeptCount label="Not sent" n={summary.emailStatus.notSent} tone="negative" />
-            </div>
-          </SummaryCard>
-        </div>
-
-        {/* 2 · Funnel */}
-        <div className="mt-3 rounded-lg border border-border-subtle bg-surface-card px-5 py-4">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-            Send funnel · {cadence}
-          </div>
-          <div className="mt-3 flex flex-wrap items-stretch gap-2">
-            {funnel.map((stage, i) => (
-              <div key={stage.label} className="flex items-stretch gap-2">
-                <div className="rounded-md border border-border-subtle bg-surface-background px-4 py-2.5">
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">
-                    {stage.label}
-                  </div>
-                  <div className="mt-0.5 flex items-baseline gap-2">
-                    <span className="text-[22px] font-bold tabular leading-none text-text-primary">
-                      {stage.value}
-                    </span>
-                    {stage.sub ? (
-                      <span className="text-[11px] font-semibold text-positive">{stage.sub}</span>
-                    ) : null}
-                  </div>
-                </div>
-                {i < funnel.length - 1 ? (
-                  <div className="flex items-center text-text-muted">→</div>
-                ) : null}
-              </div>
-            ))}
-          </div>
+            tone={summary.emailStatus.sentRatePct >= 50 ? "positive" : "negative"}
+          />
         </div>
       </div>
 
@@ -199,7 +290,7 @@ export function EmailerTracker() {
           <Select
             value={csmFilter}
             onChange={setCsmFilter}
-            options={[{ value: "all", label: "All CSMs" }, ...TRACKER_META.csms.map((c) => ({ value: c, label: c }))]}
+            options={[{ value: "all", label: "All CSMs" }, ...csms.map((c) => ({ value: c, label: c }))]}
           />
           <Select
             value={deptFilter}
@@ -237,7 +328,7 @@ export function EmailerTracker() {
             Clear filters
           </button>
           <div className="ml-auto text-[11px] text-text-muted tabular">
-            Showing {filtered.length} of {TRACKER_META.totalRooftops} rooftops
+            Showing {filtered.length} of {rooftops.length} rooftops
           </div>
         </div>
       </div>
@@ -247,11 +338,11 @@ export function EmailerTracker() {
         <table className="w-full border-separate" style={{ borderSpacing: 0 }}>
           <thead className="sticky top-0 z-20">
             <tr>
-              <Th sticky left={0} minW={210}>Rooftop</Th>
-              <Th minW={132}>Agents live</Th>
-              <Th minW={120}>Departments</Th>
+              <Th sticky left={0} minW={200}>Rooftop</Th>
+              <Th minW={92}>Dept</Th>
+              <Th minW={96}>Dry-run</Th>
               {Array.from({ length: colCount }).map((_, i) => (
-                <Th key={i} minW={88}>{formatColLabel(cadence, i)}</Th>
+                <Th key={i} minW={88}>{formatColLabel(cadence, i, today)}</Th>
               ))}
             </tr>
           </thead>
@@ -261,18 +352,15 @@ export function EmailerTracker() {
               const rowBg = idx % 2 === 0 ? "bg-surface-card" : "bg-surface-background";
               return (
                 <tr key={r.rooftop_id}>
-                  <td className={`sticky left-0 z-10 border-b border-border-subtle ${rowBg} px-4 py-2.5`} style={{ minWidth: 210 }}>
+                  <td className={`sticky left-0 z-10 border-b border-border-subtle ${rowBg} px-4 py-2`} style={{ minWidth: 200 }}>
                     <div className="text-[13px] font-semibold text-text-primary">{r.name}</div>
-                    <div className="text-[10px] text-text-muted">
-                      {r.csm}
-                      {r.group ? ` · ${r.group}` : ""}
-                    </div>
+                    <div className="text-[10px] text-text-muted">{r.group ?? r.csm}</div>
                   </td>
-                  <td className="border-b border-border-subtle px-3 py-2.5">
-                    <AgentMatrix agents={r.agents_live} />
+                  <td className="border-b border-border-subtle px-3 py-2">
+                    <DeptBadge dept={r.department} />
                   </td>
-                  <td className="border-b border-border-subtle px-3 py-2.5">
-                    <DeptPills rooftop={r} />
+                  <td className="border-b border-border-subtle px-3 py-2">
+                    <DryRunToggle rooftop={r} />
                   </td>
                   {cells.slice(0, colCount).map((c) => (
                     <td key={c.date} className="border-b border-border-subtle px-2 py-2" style={{ minWidth: 88 }}>
@@ -300,137 +388,84 @@ export function EmailerTracker() {
         onSend={(rid, date, cad) =>
           setSentNow((p) => ({ ...p, [`${rid}::${cad}::${date}`]: true }))
         }
+        onReload={() => void reload()}
       />
     </div>
   );
 }
 
 /* ============================================================
-   Summary card
+   Compact stat (header strip)
    ============================================================ */
-function SummaryCard({
+function Stat({
   label,
   value,
-  sub,
-  valueTone = "neutral",
-  children,
+  tone = "neutral",
 }: {
   label: string;
-  value: string;
-  sub: string;
-  valueTone?: "neutral" | "positive" | "negative";
-  children?: React.ReactNode;
+  value: string | number;
+  tone?: "neutral" | "positive" | "negative";
 }) {
-  const tone =
-    valueTone === "positive" ? "text-positive" : valueTone === "negative" ? "text-negative" : "text-text-primary";
+  const c = tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative" : "text-text-primary";
   return (
-    <div className="rounded-lg border border-border-subtle bg-surface-card px-5 py-4">
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className={`text-[28px] font-bold tabular leading-none ${tone}`}>{value}</span>
-        <span className="text-[11px] text-text-muted">{sub}</span>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function AgentCount({ label, n, tone }: { label: string; n: number; tone: "info" | "positive" }) {
-  const dot = tone === "info" ? "bg-info" : "bg-positive";
-  return (
-    <div className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-background px-2.5 py-1.5">
-      <span className="inline-flex items-center gap-1.5 text-[11px] text-text-secondary">
-        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-        {label}
-      </span>
-      <span className="tabular text-[13px] font-semibold text-text-primary">{n}</span>
-    </div>
-  );
-}
-
-function DeptCount({ label, n, tone }: { label: string; n: number; tone: "info" | "positive" | "negative" }) {
-  const cls =
-    tone === "info"
-      ? "bg-info-soft text-info"
-      : tone === "positive"
-      ? "bg-positive/10 text-positive"
-      : "bg-negative-soft text-negative";
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-semibold ${cls}`}>
-      <span className="tabular">{n}</span> {label}
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className={`text-[15px] font-bold tabular leading-none ${c}`}>{value}</span>
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted">{label}</span>
     </span>
   );
 }
 
 /* ============================================================
-   Agents-live 2×2 matrix
+   Department badge (one row per department)
    ============================================================ */
-function AgentMatrix({ agents }: { agents: import("./mockData").AgentType[] }) {
-  const m = agentMatrix(agents);
+function DeptBadge({ dept }: { dept?: DeptKind }) {
+  if (!dept) return <span className="text-[10px] text-text-muted">—</span>;
+  const cls = dept === "sales" ? "bg-info-soft text-info" : "bg-positive/10 text-positive";
   return (
-    <div className="space-y-1">
-      <MatrixRow label="S" ib={m.sales.ib} ob={m.sales.ob} tone="info" />
-      <MatrixRow label="Sv" ib={m.service.ib} ob={m.service.ob} tone="positive" />
-    </div>
-  );
-}
-
-function MatrixRow({
-  label,
-  ib,
-  ob,
-  tone,
-}: {
-  label: string;
-  ib: boolean;
-  ob: boolean;
-  tone: "info" | "positive";
-}) {
-  const on = tone === "info" ? "bg-info-soft text-info" : "bg-positive/10 text-positive";
-  const off = "bg-surface-subtle text-text-muted";
-  return (
-    <div className="flex items-center gap-1">
-      <span className="w-5 text-[10px] font-semibold uppercase text-text-muted">{label}</span>
-      <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${ib ? on : off}`}>IB</span>
-      <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold ${ob ? on : off}`}>OB</span>
-    </div>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${cls}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${dept === "sales" ? "bg-info" : "bg-positive"}`} />
+      {dept}
+    </span>
   );
 }
 
 /* ============================================================
-   Departments-live pills
+   Per-department dry-run toggle → writes roi_live_departments.dry_run
    ============================================================ */
-function DeptPills({ rooftop }: { rooftop: RooftopRow }) {
-  const has = (k: "sales" | "service") => rooftop.departments.some((d) => d.kind === k && d.live);
-  const emailed = (k: "sales" | "service") =>
-    rooftop.departments.some((d) => d.kind === k && d.recipients.some((r) => r.received));
-  if (rooftop.departments.length === 0) {
-    return (
-      <span className="inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-[10px] font-semibold text-warning">
-        Unclassified
-      </span>
-    );
-  }
+function DryRunToggle({ rooftop }: { rooftop: RooftopRow }) {
+  const [on, setOn] = useState<boolean>(rooftop.dryRun !== false);
+  const [busy, setBusy] = useState(false);
+  const toggle = async () => {
+    if (busy || !rooftop.team_id || !rooftop.department) return;
+    const next = !on;
+    setOn(next);
+    if (!supabase) return; // mock mode — local only
+    setBusy(true);
+    const { error } = await supabase
+      .from("roi_live_departments")
+      .update({ dry_run: next })
+      .eq("team_id", rooftop.team_id)
+      .eq("department", rooftop.department);
+    if (error) setOn(!next); // revert on failure
+    setBusy(false);
+  };
   return (
-    <div className="flex flex-wrap gap-1">
-      {(["sales", "service"] as const).map((k) => {
-        const live = has(k);
-        if (!live) return null;
-        const sent = emailed(k);
-        return (
-          <span
-            key={k}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
-              sent ? "bg-positive/10 text-positive" : "bg-warning-soft text-warning"
-            }`}
-            title={sent ? `${k} · receiving emails` : `${k} · live but not emailed`}
-          >
-            <span className={`h-1.5 w-1.5 rounded-full ${sent ? "bg-positive" : "bg-warning"}`} />
-            {k}
-          </span>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={busy}
+      title={
+        on
+          ? "Dry-run ON — emails held for this department. Click to allow live sends."
+          : "Dry-run OFF — live sends allowed. Click to hold (dry-run)."
+      }
+      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+        on ? "bg-warning-soft text-warning" : "bg-positive/10 text-positive"
+      } ${busy ? "opacity-50" : ""}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${on ? "bg-warning" : "bg-positive"}`} />
+      {on ? "Dry-run" : "Live"}
+    </button>
   );
 }
 
@@ -467,12 +502,14 @@ function SendStatusCell({
       );
     case "suppressed":
       return (
-        <span
-          className="inline-flex w-full items-center justify-center rounded-md bg-warning-soft px-2 py-1 text-[11px] font-semibold text-warning"
-          title={cell.reason ? `Suppressed · ${NOT_SENT_REASON_LABEL[cell.reason]}` : "Suppressed"}
+        <button
+          type="button"
+          onClick={onOpen}
+          title={cell.reason ? `Suppressed · ${NOT_SENT_REASON_LABEL[cell.reason]} · click to view + send` : "Suppressed · click to view + send"}
+          className="inline-flex w-full items-center justify-center rounded-md bg-warning-soft px-2 py-1 text-[11px] font-semibold text-warning hover:bg-warning-soft/80"
         >
           Suppr.
-        </span>
+        </button>
       );
     case "not_sent": {
       const reason = cell.reason ?? "scheduler_skipped";
@@ -557,8 +594,8 @@ function Select({
   );
 }
 
-function formatColLabel(cadence: Cadence, i: number): string {
-  const [y, m, d] = TRACKER_META.today.split("-").map(Number);
+function formatColLabel(cadence: Cadence, i: number, today: string): string {
+  const [y, m, d] = today.split("-").map(Number);
   const date = new Date(Date.UTC(y, m - 1, d));
   if (cadence === "daily") {
     date.setUTCDate(date.getUTCDate() - i);
@@ -571,6 +608,3 @@ function formatColLabel(cadence: Cadence, i: number): string {
   date.setUTCMonth(date.getUTCMonth() - i);
   return date.toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
 }
-
-// silence unused-import lint for AGENT_LABEL (used in the drawer, re-exported via mockData)
-void AGENT_LABEL;

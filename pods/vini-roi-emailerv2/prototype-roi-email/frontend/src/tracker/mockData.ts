@@ -47,11 +47,28 @@ export type Department = {
   recipients: Recipient[];
 };
 
+/** Loose shape of the stored digest payload (roi_digest_runs.metrics jsonb). */
+export type DigestMetrics = Record<string, number | string>;
+
+/** One department's run on a given date — carries the real stored payload. */
+export type CellRun = {
+  department: DeptKind;
+  status: SendStatus;
+  reason?: string; // raw backend reason (e.g. 'dry_run', 'no_data')
+  metrics?: DigestMetrics;
+  /** Exact HTML stored at send time (real sends only; null for metrics-only backfill). */
+  renderedHtml?: string;
+  /** Who the email was actually sent to (run.recipients). */
+  recipients?: { email: string; name?: string; received?: boolean; bounced?: boolean }[];
+};
+
 export type SendCell = {
   date: string; // ISO YYYY-MM-DD
   cadence: Cadence;
   status: SendStatus;
   reason?: NotSentReason;
+  /** Per-department runs behind this cell (real data from roi_digest_runs). */
+  runs?: CellRun[];
 };
 
 export type RooftopRow = {
@@ -59,6 +76,12 @@ export type RooftopRow = {
   name: string;
   enterprise_id?: string;
   team_id?: string;
+  /** Set when this row tracks a single department (one row per dept). */
+  department?: DeptKind;
+  /** Per-department dry-run flag (roi_live_departments.dry_run). */
+  dryRun?: boolean;
+  /** Dealer timezone (roi_rooftop_config.timezone) — used to build link windows. */
+  timezone?: string;
   csm: string;
   group?: string;
   /** Detected live agents · present even when the rooftop isn't classified */
